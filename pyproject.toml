@@ -9,7 +9,7 @@ dependencies = [
 ]
 
 # if you have an Nvidia GPU, don't touch code. It will install the cuda version of pytorch.
-# else comment (#) all below to install cpu version of pytorch
+# else comment (#) all below to install default version of pytorch
 
 [[tool.uv.index]]
 name = "pytorch-cu128"
