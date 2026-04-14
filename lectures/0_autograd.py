@@ -88,7 +88,6 @@ class Value:
             node._backward()
 
 # PART 1: NN MLP LIBRARY ON TOP VALUE ENGINE
-# Implement MLP
 class Neuron:
     def __init__(self, nin):
         self.w = [Value(random.uniform(-1,1)) for _ in range(nin)]
@@ -119,3 +118,29 @@ class MLP:
         return x
     def parameters(self):
         return [p for layer in self.layers for p in layer.parameters()]
+    
+# PART 2: TRAINING A MLP
+# Prepare the model, inputs, labels
+model = MLP(3,[4,4,1])
+xs = [
+    [1.0,-1.0,0.0],
+    [0.3,-0.6,0.5],
+    [0.5,-1.0,1.2],
+    [0.1,-0.6,0.5],
+]
+ys = [1.0, -1.0, -1.0, 1.0]
+
+# Gradient descent: forward, backward, update, check loss
+for k in range (300):
+    ypred = [model(x) for x in xs]
+    loss = sum((ypred-ys)**2 for ypred, ys in zip(ypred, ys))
+    for p in model.parameters():
+        p.grad = 0.0
+    loss.backward()
+    for p in model.parameters():
+        p.data += -0.1 * p.grad
+    if (k+1) % 100 == 0:
+        print(f"{k:3} | loss = {loss.data}")
+
+# Results
+print(ypred)
