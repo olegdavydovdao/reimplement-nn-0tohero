@@ -159,6 +159,7 @@ for i in range(n_iters):
 
 # PART 3: GRADIENTS, ACTIVATIONS, PARAMS STATISTICS AND THEIR GRAPHS
 # Activations of layer.out
+print('Activations of layer.out')
 plt.figure(figsize=(20,4))
 legends = []
 for i, layer in enumerate(layers[:-1]):
@@ -170,8 +171,10 @@ for i, layer in enumerate(layers[:-1]):
         legends.append(f'{layer.__class__.__name__} {i}, {tuple(t.data.shape)}')
 plt.legend(legends);
 plt.title('activation distribution');
+plt.show()
 
 # Gradients of layer.out.grad
+print('Gradients of layer.out.grad')
 plt.figure(figsize=(20,4))
 legends = []
 for i, layer in enumerate(layers[:-1]):
@@ -183,8 +186,10 @@ for i, layer in enumerate(layers[:-1]):
         legends.append(f'{layer.__class__.__name__} {i}, {tuple(t.data.shape)}')
 plt.legend(legends);
 plt.title('gradient distribution');
+plt.show()
 
 # Gradients of parameters
+print('Gradients of parameters')
 plt.figure(figsize=(20,4))
 legends = []
 for i, p in enumerate(parameters):
@@ -196,8 +201,10 @@ for i, p in enumerate(parameters):
         legends.append(f'{i}, {tuple(t.data.shape)}')
 plt.legend(legends);
 plt.title('weight gradient distribution');
+plt.show()
 
 # Update/data ratio of parameters
+print('Update/data ratio of parameters')
 plt.figure(figsize=(20,4))
 legends = []
 for i, p in enumerate(parameters):
@@ -209,3 +216,4 @@ for i, p in enumerate(parameters):
         legends.append(f'{i}, {tuple(t.data.shape)}')
 plt.legend(legends);
 plt.title('update / data ratio');
+plt.show()
