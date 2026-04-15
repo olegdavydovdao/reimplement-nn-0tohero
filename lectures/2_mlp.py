@@ -26,7 +26,7 @@ stoi = {s:i for i,s in itos.items()}
 block_size = 3
 n_emb = 10
 n_hid = 200
-n_iters = 100000
+n_iters = 10000
 batch_size = 32
 lr = 0.1
 lr_decay = 0.01
@@ -56,3 +56,67 @@ print(f'total names: {len(names)}')
 print(f'bigram training examples: {Ytrsh}')
 print(f'bigram validation examples: {Yval.shape[0]}')
 print(f'bigram test examples: {Yte.shape[0]}')
+
+# PART 2: MODEL INIT, TRAINING, AND SAMPLING
+# Model init: parameters and logs
+g = torch.Generator().manual_seed(2147483647)
+C = torch.randn((sz_voc, n_emb), generator = g)
+W1 = torch.randn((n_emb*block_size, n_hid), generator = g)
+b1 = torch.randn(n_hid, generator = g)
+W2 = torch.randn((n_hid, sz_voc), generator = g)
+b2 = torch.randn(sz_voc, generator = g)
+parameters = [C,W1,b1,W2,b2]
+for p in parameters:
+    p.requires_grad = True
+print(f'num parameters: {sum(p.nelement() for p in parameters)}')
+
+lre = torch.linspace(-3, 0, n_iters)
+lrs = 10**lre
+lossi = []
+stepi = []
+lrei = []
+lri = []
+
+# Train the net with mini-batches
+for i in range(n_iters):
+    batch = torch.randint(0, Ytrsh, (batch_size,), generator = g)
+    emb = C[Xtr[batch]]
+    h = torch.tanh(emb.view(batch_size,W1.shape[0]) @ W1 + b1)
+    logits = h @ W2 + b2
+    loss = F.cross_entropy(logits, Ytr[batch])
+    if (i+1)%(n_iters/10) == 0 or i == 0:
+        print(f'{i:6} | loss: {loss.item():.4f}')
+
+    for p in parameters:
+        p.grad = None
+    loss.backward()
+
+
+    # lr = lrs[i]
+    lr = lr if i < int(0.7*n_iters) else lr_decay
+    for p in parameters:
+        p.data -= lr * p.grad
+
+    # Logs
+    # lrei.append(lre[i])
+    # lri.append(lr)
+    # lossi.append(loss.log().item())
+    # stepi.append(i)
+
+# Sample new names
+g = torch.Generator().manual_seed(2147483647)
+for _ in range(10):
+    context = [0] * block_size
+    new_name = []
+    while True:
+        emb = C[context]
+        h = torch.tanh(emb.view(1,W1.shape[0]) @ W1 + b1)
+        logits = h @ W2 + b2
+        probs = F.softmax(logits, 1)
+        ix = torch.multinomial(probs, 1, generator = g).item()
+        context = context[1:] + [ix]
+        new_name.append(itos[ix])
+        if ix == 0:
+            break
+    print(''.join(new_name))
+    
