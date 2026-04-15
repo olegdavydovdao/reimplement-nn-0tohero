@@ -28,3 +28,37 @@ xs = torch.tensor(xs)
 ys = torch.tensor(ys)
 num = xs.nelement()
 print(f'number of data points: {num}')
+
+# PART 1: TRAIN AND SAMPLE
+# Parameters and generator
+g = torch.Generator().manual_seed(2147483647)
+W = torch.randn((27,27), generator = g, requires_grad = True)
+# Train the net: forward, backward, update, evaluate loss
+for k in range (100):
+    xenc = F.one_hot(xs, num_classes = sz_voc).float()
+    logits = xenc @ W
+    counts = logits.exp()
+    probs = counts / counts.sum(1, keepdim = True)
+    loss = -probs[torch.arange(num), ys].log().mean() + 0.01*(W**2).mean()
+    if (k+1) % 100 == 0:
+        print(f"{k} | loss = {loss.item()}")
+    W.grad = None
+    loss.backward()
+    W.data += -50 * W.grad
+
+# Sample new names
+g = torch.Generator().manual_seed(2147483647)
+for _ in range(5):
+    ix = 0
+    new_name = []
+    while True:
+        xenc = F.one_hot(torch.tensor([ix]), num_classes = sz_voc).float()
+        logits = xenc @ W
+        counts = logits.exp()
+        probs = counts / counts.sum(1, keepdim = True)
+        ix = torch.multinomial(probs, 1, generator = g)
+        new_name.append(itos[ix.item()])
+        if ix == 0:
+            break
+    print(''.join(new_name))
+    
