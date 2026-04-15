@@ -26,7 +26,7 @@ stoi = {s:i for i,s in itos.items()}
 block_size = 3
 n_emb = 10
 n_hidden = 100
-n_iters = 10000
+n_iters = 1000
 batch_size = 32
 lr = 0.1
 lr_decay = 0.01
@@ -156,3 +156,56 @@ for i in range(n_iters):
     # if i == 1000:
     #     print(loss)
     #     break
+
+# PART 3: GRADIENTS, ACTIVATIONS, PARAMS STATISTICS AND THEIR GRAPHS
+# Activations of layer.out
+plt.figure(figsize=(20,4))
+legends = []
+for i, layer in enumerate(layers[:-1]):
+    if isinstance(layer, Tanh):
+        t = layer.out
+        print(f'Layer {i} | ({layer.__class__.__name__}, {tuple(t.data.shape)}) | mean:{t.data.mean():+.2f} | std:{t.data.std():.2f} | saturated:{(t.data.abs()>0.97).float().mean()*100:.2f}%')
+        hy, hx = torch.histogram(t.data, density=True)
+        plt.plot(hx[:-1], hy)
+        legends.append(f'{layer.__class__.__name__} {i}, {tuple(t.data.shape)}')
+plt.legend(legends);
+plt.title('activation distribution');
+
+# Gradients of layer.out.grad
+plt.figure(figsize=(20,4))
+legends = []
+for i, layer in enumerate(layers[:-1]):
+    if isinstance(layer, Tanh):
+        t = layer.out.grad
+        print(f'Layer {i} | ({layer.__class__.__name__}, {tuple(t.data.shape)}) | mean:{t.data.mean():+.2e} | std:{t.data.std():.2e}')
+        hy, hx = torch.histogram(t.data, density=True)
+        plt.plot(hx[:-1], hy)
+        legends.append(f'{layer.__class__.__name__} {i}, {tuple(t.data.shape)}')
+plt.legend(legends);
+plt.title('gradient distribution');
+
+# Gradients of parameters
+plt.figure(figsize=(20,4))
+legends = []
+for i, p in enumerate(parameters):
+    if p.ndim == 2:
+        t = p.grad
+        print(f'{str(tuple(t.data.shape)):<10} | mean:{t.data.mean():+.2e} | std:{t.data.std():.2e}, grad/data: {t.std()/p.data.std():.2e}')
+        hy, hx = torch.histogram(t.data, density=True)
+        plt.plot(hx[:-1], hy)
+        legends.append(f'{i}, {tuple(t.data.shape)}')
+plt.legend(legends);
+plt.title('weight gradient distribution');
+
+# Update/data ratio of parameters
+plt.figure(figsize=(20,4))
+legends = []
+for i, p in enumerate(parameters):
+    if p.ndim == 2:
+        t = p.grad
+        plt.plot([ud[j][i] for j in range(len(ud))])
+        print(f'{str(tuple(t.data.shape)):<10} | mean:{t.data.mean():+.2e} | std:{t.data.std():.2e} | update/data: {lr*t.std()/p.data.std():.2e}')
+        plt.plot([0,len(ud)], [-3,-3], 'k')
+        legends.append(f'{i}, {tuple(t.data.shape)}')
+plt.legend(legends);
+plt.title('update / data ratio');
