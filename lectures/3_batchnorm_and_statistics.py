@@ -128,3 +128,31 @@ with torch.no_grad():
     for layer in layers[:-1]:
         if isinstance(layer,Linear):
             layer.weight *= 5/3
+
+# PART 2: TRAINING
+for i in range(n_iters):
+    batch = torch.randint(0, num_tr, (batch_size,), generator = g)
+    emb = C[Xtr[batch]]
+    x = emb.view(emb.shape[0], -1)
+    for layer in layers:
+        x = layer(x)
+    loss = F.cross_entropy(x, Ytr[batch])
+    if (i+1)%(n_iters/10) == 0 or i == 0 or i == n_iters-1:
+        print(f'{i:6} | loss: {loss.item():.4f}')
+
+    for layer in layers:
+        layer.out.retain_grad()
+    for p in parameters:
+        p.grad = None
+    loss.backward()
+
+    lr = lr if i < int(0.7*n_iters) else lr_decay
+    for p in parameters:
+        p.data -= lr * p.grad
+
+    with torch.no_grad():
+        ud.append([(lr*p.grad.std()/p.data.std()).log10().item() for p in parameters])
+
+    # if i == 1000:
+    #     print(loss)
+    #     break
