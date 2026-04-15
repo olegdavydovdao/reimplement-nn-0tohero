@@ -100,12 +100,12 @@ for i in range(n_iters):
     # Logs
     # lrei.append(lre[i])
     # lri.append(lr)
-    # lossi.append(loss.log().item())
+    lossi.append(loss.log().item())
     # stepi.append(i)
 
 # Sample new names
 g = torch.Generator().manual_seed(2147483647)
-for _ in range(10):
+for _ in range(5):
     context = [0] * block_size
     new_name = []
     while True:
@@ -119,4 +119,41 @@ for _ in range(10):
         if ix == 0:
             break
     print(''.join(new_name))
-    
+
+# PART 3: RESULTS: LOSSES, GRAPHS, EMBEDDING VISUALIZATION
+# Graphs
+# plt.plot(lrei, lossi)
+# plt.plot(lri, lossi)
+# plt.plot(stepi, lossi)
+plt.plot(lossi)
+plt.show()
+
+# Loss train
+emb = C[Xtr]
+h = torch.tanh(emb.view(-1,W1.shape[0]) @ W1 + b1)
+logits = h @ W2 + b2
+loss_tr = F.cross_entropy(logits, Ytr)
+print(f'train loss: {loss_tr:.4f}')
+
+# Loss validation
+emb = C[Xval]
+h = torch.tanh(emb.view(-1,W1.shape[0]) @ W1 + b1)
+logits = h @ W2 + b2
+loss_v = F.cross_entropy(logits, Yval)
+print(f'validation loss: {loss_v:.4f}')
+
+# Loss test
+emb = C[Xte]
+h = torch.tanh(emb.view(-1,W1.shape[0]) @ W1 + b1)
+logits = h @ W2 + b2
+loss_test = F.cross_entropy(logits, Yte)
+print(f'test loss: {loss_test:.4f}')
+
+# (x,y) of embeddings in 2d space (only for 2 first dim of vectors in embeddings)
+C4 = C.detach()
+plt.plot(figsize=(10,10))
+plt.scatter(C4[:,0], C4[:,1], s=200)
+for i in range(C4.shape[0]):
+    plt.text(C4[i,0], C4[i,1], itos[i], ha='center', va='center', color='white')
+plt.grid()
+plt.show()
