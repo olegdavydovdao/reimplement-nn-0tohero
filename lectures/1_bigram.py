@@ -40,7 +40,7 @@ for k in range (100):
     counts = logits.exp()
     probs = counts / counts.sum(1, keepdim = True)
     loss = -probs[torch.arange(num), ys].log().mean() + 0.01*(W**2).mean()
-    if (k+1) % 100 == 0:
+    if k%100==0 or (k+1) % 100 == 0:
         print(f"{k} | loss = {loss.item()}")
     W.grad = None
     loss.backward()
@@ -61,4 +61,3 @@ for _ in range(5):
         if ix == 0:
             break
     print(''.join(new_name))
-    
