@@ -26,7 +26,7 @@ stoi = {s:i for i,s in itos.items()}
 block_size = 3
 n_emb = 10
 n_hid = 200
-n_iters = 10000
+n_iters = 100000
 batch_size = 32
 lr = 0.1
 lr_decay = 0.01
@@ -90,7 +90,6 @@ for i in range(n_iters):
     for p in parameters:
         p.grad = None
     loss.backward()
-
 
     # lr = lrs[i]
     lr = lr if i < int(0.7*n_iters) else lr_decay
