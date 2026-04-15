@@ -20,3 +20,39 @@ vocab.insert(0, '.')
 sz_voc = len(vocab)
 itos = {i:s for i,s in enumerate(vocab)}
 stoi = {s:i for i,s in itos.items()}
+
+# PART 1: HYPERPARAMETERS AND DATA PREPARATION
+# Hyperparameters
+block_size = 3
+n_emb = 10
+n_hid = 200
+n_iters = 100000
+batch_size = 32
+lr = 0.1
+lr_decay = 0.01
+
+# Data preparation: input and labels, train/validation/test splits
+def build_split(names):
+    X, Y = [], []
+    for name in names:
+        context = [0] * block_size
+        for ch in name+'.':
+            X.append(context)
+            ix = stoi[ch]
+            Y.append(ix)
+            context = context[1:] + [ix]
+    X = torch.tensor(X)
+    Y = torch.tensor(Y)
+    return X,Y
+
+n1 = int(0.8*len(names))
+n2 = int(0.9*len(names))
+
+Xtr,Ytr = build_split(names[:n1])
+Ytrsh = Ytr.shape[0]
+Xval,Yval = build_split(names[n1:n2])
+Xte,Yte = build_split(names[n2:])
+print(f'total names: {len(names)}')
+print(f'bigram training examples: {Ytrsh}')
+print(f'bigram validation examples: {Yval.shape[0]}')
+print(f'bigram test examples: {Yte.shape[0]}')
