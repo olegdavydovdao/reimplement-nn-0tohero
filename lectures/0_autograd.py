@@ -1,6 +1,4 @@
-# THEME: NN AND BACKPROPOGATION
-# PART 0: BACKPROPOGATION AUTOGRAD ENGINE (class Value)
-
+# PART 0: BACKPROPOGATION AUTOGRAD ENGINE IN NEURAL NETWORKS
 # Import libraries
 import math
 import random
@@ -76,7 +74,8 @@ class Value:
     def backward(self):
         topo = []
         visited = set()
-        def funtopo(n): # topological sort
+        # Topological sort in forward pass manner
+        def funtopo(n):
             if n not in visited:
                 visited.add(n)
                 for prev in n._prev:
@@ -87,7 +86,7 @@ class Value:
         for node in reversed(topo):
             node._backward()
 
-# PART 1: NN MLP LIBRARY ON TOP VALUE ENGINE
+# PART 1: NN MLP LIBRARY ON TOP VALUE AUTOGRAD ENGINE
 class Neuron:
     def __init__(self, nin):
         self.w = [Value(random.uniform(-1,1)) for _ in range(nin)]
@@ -119,7 +118,7 @@ class MLP:
     def parameters(self):
         return [p for layer in self.layers for p in layer.parameters()]
     
-# PART 2: TRAINING A MLP
+# PART 2: MLP TRAINING
 # Prepare the model, inputs, labels
 model = MLP(3,[4,4,1])
 xs = [
@@ -139,8 +138,8 @@ for k in range (300):
     loss.backward()
     for p in model.parameters():
         p.data += -0.1 * p.grad
-    if (k+1) % 100 == 0:
+    if k % 100 == 0 or (k+1)==300:
         print(f"{k:3} | loss = {loss.data}")
 
-# Results
+# Results that should fit ys(labels)
 print(ypred)
