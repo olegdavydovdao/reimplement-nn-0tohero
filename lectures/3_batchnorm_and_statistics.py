@@ -217,3 +217,46 @@ for i, p in enumerate(parameters):
 plt.legend(legends);
 plt.title('update / data ratio');
 plt.show()
+
+# PART 4: RESULTS: LOSSES AND SAMPLES
+# Loss of different splits
+@torch.no_grad()
+def loss_split(split):
+    Xs,Ys = {
+        'train': (Xtr, Ytr),
+        'val': (Xval, Yval),
+        'test': (Xte, Yte),
+    }[split]
+    emb = C[Xs]
+    x = emb.view(emb.shape[0], -1)
+    for layer in layers:
+        if isinstance (layer, BatchNorm1d):
+            layer.training = False
+        x = layer(x)
+    loss = F.cross_entropy(x, Ys)
+    print(split,'loss:', loss.item())
+loss_split('train')
+loss_split('val')
+
+# Sample new names
+g = torch.Generator().manual_seed(2147483647)
+for _ in range(5):
+    context = [0] * block_size
+    new_name = []
+    while True:
+        emb = C[context]
+        x = emb.view(1,-1)
+        for layer in layers:
+            if isinstance (layer, BatchNorm1d):
+                layer.training = False
+            x = layer(x)
+        probs = F.softmax(x, 1)
+        ix = torch.multinomial(probs, 1, generator = g).item()
+        context = context[1:] + [ix]
+        new_name.append(itos[ix])
+        if ix == 0:
+            break
+    print(''.join(new_name))
+
+# Test loss once at the end
+loss_split('test')
