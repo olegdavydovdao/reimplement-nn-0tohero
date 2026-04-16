@@ -5,13 +5,13 @@ import torch
 import torch.nn.functional as F
 from utils.preprocess_names import get_splits_names
 
-# In original lecture, splits and shuffle names come later
-# I don't want to repeat slightly different code spelling but with the same logic
+# In original lecture, splits and shuffle names come one lecture later
+# I want to compress the code
 Xtr,Ytr,Xval,Yval,Xte,Yte,itos,stoi,sz_voc,num_tr = get_splits_names(block_size=1)
 xs = Xtr.squeeze(1)
 ys = Ytr
 
-# PART 1: INIT, TRAIN AND SAMPLE
+# PART 1: INIT, TRAIN
 # Parameters init and generator
 g = torch.Generator().manual_seed(2147483647)
 W = torch.randn((27,27), generator = g, requires_grad = True)
@@ -29,6 +29,7 @@ for k in range (100):
     loss.backward()
     W.data += -50 * W.grad
 
+# PART 2: RESULTS
 # Sample new names
 g = torch.Generator().manual_seed(2147483647)
 for _ in range(5):

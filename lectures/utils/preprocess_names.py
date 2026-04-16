@@ -1,5 +1,5 @@
-# THEME: REUSABLE CODE OPEN FILE, LETTERS AND THEIR INDICES
-# PART 0: PREPARATION
+# THEME: REUSABLE CODE LECTURE 1-5
+# PART 0: PREPARATION NAMES FILE TO FEED INTO NN
 # Import libraries
 import os
 import random
@@ -19,6 +19,7 @@ sz_voc = len(vocab)
 itos = {i:s for i,s in enumerate(vocab)}
 stoi = {s:i for i,s in itos.items()}
 
+# Reusable function
 def get_splits_names(block_size):
     # Data preparation: input and labels, train/validation/test splits
     def build_split(names):
@@ -47,5 +48,6 @@ def get_splits_names(block_size):
     print(f'bigram test examples: {Yte.shape[0]}')
     return Xtr,Ytr,Xval,Yval,Xte,Yte,itos,stoi,sz_voc,num_tr
 
+# When launched only this file
 if __name__ == '__main__':
     get_splits_names(block_size=1)

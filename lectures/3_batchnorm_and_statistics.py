@@ -1,12 +1,11 @@
 # THEME: INITIALIZATION, BATCHNORM1D, ACTIVATIONS AND GRADIENTS STATISTICS
-# PART 0: PREPARATION
+# PART 0: HYPERPARAMETERS AND DATA PREPARATION
 # Import libraries
 import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from utils.preprocess_names import get_splits_names
 
-# PART 1: HYPERPARAMETERS AND DATA PREPARATION
 # Hyperparameters
 block_size = 3
 n_emb = 10
@@ -17,8 +16,9 @@ lr = 0.1
 lr_decay = 0.01
 
 Xtr,Ytr,Xval,Yval,Xte,Yte,itos,stoi,sz_voc,num_tr = get_splits_names(block_size=block_size)
+print(f"Xtr.shape: {Xtr.shape}")
 
-# PART 0: PYTORCHIFYING CODE AND INITIALIZATION
+# PART 1: PYTORCHIFYING CODE
 # Build modules of nn
 class Linear:
     def __init__(self, fan_in, fan_out, bias=True):
@@ -63,6 +63,7 @@ class Tanh:
     def parameters(self):
         return []
     
+# PART 2: INIT PYTORCH-LIKE CODE
 # Init model's layers as modules in stack
 g = torch.Generator().manual_seed(2147483647)
 C = torch.randn((sz_voc, n_emb), generator = g)
@@ -90,7 +91,7 @@ with torch.no_grad():
         if isinstance(layer,Linear):
             layer.weight *= 5/3
 
-# PART 2: TRAINING
+# PART 3: TRAINING
 for i in range(n_iters):
     batch = torch.randint(0, num_tr, (batch_size,), generator = g)
     emb = C[Xtr[batch]]
@@ -118,8 +119,7 @@ for i in range(n_iters):
     #     print(loss)
     #     break
 
-# PART 3: GRADIENTS, ACTIVATIONS, PARAMS STATISTICS AND THEIR GRAPHS
-# Activations of layer.out
+# PART 4: NN STATISTICS AND THEIR GRAPHS
 plt.ion()
 def graph_statistics_activations(choice):
     assert choice in ['activations', 'activations_gradients']
@@ -173,8 +173,8 @@ graph_statistics_parameters('weight_grad')
 plt.ioff()
 graph_statistics_parameters('update_data_ratio')
 
-# PART 4: RESULTS: LOSSES AND SAMPLES
-# Loss of different splits
+# PART 5: RESULTS
+# Losses of different splits
 @torch.no_grad()
 def loss_split(split):
     Xs,Ys = {

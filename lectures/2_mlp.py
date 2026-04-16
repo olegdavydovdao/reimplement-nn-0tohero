@@ -1,12 +1,11 @@
 # THEME: N-GRAM MLP CHARACTER LEVEL LANGUAGE MODEL
-# PART 0: PREPARATION
+# PART 0: HYPERPARAMETERS AND DATA PREPARATION
 # Import libraries
 import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from utils.preprocess_names import get_splits_names
 
-# PART 1: HYPERPARAMETERS AND DATA PREPARATION
 # Hyperparameters
 block_size = 3
 n_emb = 10
@@ -19,7 +18,7 @@ lr_decay = 0.01
 Xtr,Ytr,Xval,Yval,Xte,Yte,itos,stoi,sz_voc,num_tr = get_splits_names(block_size=block_size)
 print(f"Xtr.shape: {Xtr.shape}")
 
-# PART 2: MODEL INIT, TRAINING
+# PART 1: MODEL INIT, TRAINING
 # Model init: parameters and logs
 g = torch.Generator().manual_seed(2147483647)
 C = torch.randn((sz_voc, n_emb), generator = g)
@@ -64,14 +63,15 @@ for i in range(n_iters):
     lossi.append(loss.log().item())
     # stepi.append(i)
 
-# PART 3: RESULTS: LOSSES, GRAPHS, EMBEDDING VISUALIZATION
-# Graphs
+# PART 3: RESULTS
+# Different graphs
 # plt.plot(lrei, lossi)
 # plt.plot(lri, lossi)
 # plt.plot(stepi, lossi)
 plt.plot(lossi)
 plt.show()
 
+# Different losses
 @torch.no_grad()
 def loss_split(split):
     Xs,Ys = {
@@ -104,7 +104,7 @@ for _ in range(5):
             break
     print(''.join(new_name))
 
-# (x,y) of embeddings in 2d space (only for 2 first dim of vectors in embeddings)
+# Embedding visualization. (x,y) of embeddings in 2d space (only for 2 first dim of vectors in embeddings)
 C4 = C.detach()
 plt.plot(figsize=(10,10))
 plt.scatter(C4[:,0], C4[:,1], s=200)
