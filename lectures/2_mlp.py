@@ -17,6 +17,7 @@ lr = 0.1
 lr_decay = 0.01
 
 Xtr,Ytr,Xval,Yval,Xte,Yte,itos,stoi,sz_voc,num_tr = get_splits_names(block_size=block_size)
+print(f"Xtr.shape: {Xtr.shape}")
 
 # PART 2: MODEL INIT, TRAINING
 # Model init: parameters and logs

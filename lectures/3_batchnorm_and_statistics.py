@@ -120,64 +120,58 @@ for i in range(n_iters):
 
 # PART 3: GRADIENTS, ACTIVATIONS, PARAMS STATISTICS AND THEIR GRAPHS
 # Activations of layer.out
-print('Activations of layer.out')
-plt.figure(figsize=(20,4))
-legends = []
-for i, layer in enumerate(layers[:-1]):
-    if isinstance(layer, Tanh):
-        t = layer.out
-        print(f'Layer {i} | ({layer.__class__.__name__}, {tuple(t.data.shape)}) | mean:{t.data.mean():+.2f} | std:{t.data.std():.2f} | saturated:{(t.data.abs()>0.97).float().mean()*100:.2f}%')
-        hy, hx = torch.histogram(t.data, density=True)
-        plt.plot(hx[:-1], hy)
-        legends.append(f'{layer.__class__.__name__} {i}, {tuple(t.data.shape)}')
-plt.legend(legends);
-plt.title('activation distribution');
-plt.show()
+plt.ion()
+def graph_statistics_activations(choice):
+    assert choice in ['activations', 'activations_gradients']
+    if choice == 'activations':
+        print('Activations of layer.out')
+    else:
+        print('Gradients of layer.out.grad')
+    plt.figure(figsize=(20,4))
+    legends = []
+    for i, layer in enumerate(layers[:-1]):
+        if isinstance(layer, Tanh):
+            if choice == 'activations':
+                t = layer.out
+                print(f'Layer {i} | ({layer.__class__.__name__}, {tuple(t.data.shape)}) | mean:{t.data.mean():+.2f} | std:{t.data.std():.2f} | saturated:{(t.data.abs()>0.97).float().mean()*100:.2f}%')
+            else:
+                t = layer.out.grad
+                print(f'Layer {i} | ({layer.__class__.__name__}, {tuple(t.data.shape)}) | mean:{t.data.mean():+.2e} | std:{t.data.std():.2e}')
+            hy, hx = torch.histogram(t.data, density=True)
+            plt.plot(hx[:-1], hy)
+            legends.append(f'{layer.__class__.__name__} {i}, {tuple(t.data.shape)}')
+    plt.legend(legends);
+    plt.title('activation distribution') if choice == 'activations' else plt.title('activation gradients distribution')
+    plt.show()
+graph_statistics_activations('activations')
+graph_statistics_activations('activations_gradients')
 
-# Gradients of layer.out.grad
-print('Gradients of layer.out.grad')
-plt.figure(figsize=(20,4))
-legends = []
-for i, layer in enumerate(layers[:-1]):
-    if isinstance(layer, Tanh):
-        t = layer.out.grad
-        print(f'Layer {i} | ({layer.__class__.__name__}, {tuple(t.data.shape)}) | mean:{t.data.mean():+.2e} | std:{t.data.std():.2e}')
-        hy, hx = torch.histogram(t.data, density=True)
-        plt.plot(hx[:-1], hy)
-        legends.append(f'{layer.__class__.__name__} {i}, {tuple(t.data.shape)}')
-plt.legend(legends);
-plt.title('gradient distribution');
-plt.show()
-
-# Gradients of parameters
-print('Gradients of parameters')
-plt.figure(figsize=(20,4))
-legends = []
-for i, p in enumerate(parameters):
-    if p.ndim == 2:
-        t = p.grad
-        print(f'{str(tuple(t.data.shape)):<10} | mean:{t.data.mean():+.2e} | std:{t.data.std():.2e}, grad/data: {t.std()/p.data.std():.2e}')
-        hy, hx = torch.histogram(t.data, density=True)
-        plt.plot(hx[:-1], hy)
-        legends.append(f'{i}, {tuple(t.data.shape)}')
-plt.legend(legends);
-plt.title('weight gradient distribution');
-plt.show()
-
-# Update/data ratio of parameters
-print('Update/data ratio of parameters')
-plt.figure(figsize=(20,4))
-legends = []
-for i, p in enumerate(parameters):
-    if p.ndim == 2:
-        t = p.grad
-        plt.plot([ud[j][i] for j in range(len(ud))])
-        print(f'{str(tuple(t.data.shape)):<10} | mean:{t.data.mean():+.2e} | std:{t.data.std():.2e} | update/data: {lr*t.std()/p.data.std():.2e}')
-        plt.plot([0,len(ud)], [-3,-3], 'k')
-        legends.append(f'{i}, {tuple(t.data.shape)}')
-plt.legend(legends);
-plt.title('update / data ratio');
-plt.show()
+def graph_statistics_parameters(choice):
+    assert choice in ['weight_grad', 'update_data_ratio']
+    if choice == 'weight_grad':
+        print('Gradients of parameters')
+    else:
+        print('Update/data ratio of parameters')
+    plt.figure(figsize=(20,4))
+    legends = []
+    for i, p in enumerate(parameters):
+        if p.ndim == 2:
+            t = p.grad
+            if choice == 'weight_grad':
+                print(f'{str(tuple(t.data.shape)):<10} | mean:{t.data.mean():+.2e} | std:{t.data.std():.2e}, grad/data: {t.std()/p.data.std():.2e}')
+                hy, hx = torch.histogram(t.data, density=True)
+                plt.plot(hx[:-1], hy)
+            else:
+                plt.plot([ud[j][i] for j in range(len(ud))])
+                print(f'{str(tuple(t.data.shape)):<10} | mean:{t.data.mean():+.2e} | std:{t.data.std():.2e} | update/data: {lr*t.std()/p.data.std():.2e}')
+                plt.plot([0,len(ud)], [-3,-3], 'k')
+            legends.append(f'{i}, {tuple(t.data.shape)}')
+    plt.legend(legends);
+    plt.title('weight gradient distribution') if choice == 'weight_grad' else plt.title('update/data ratio')
+    plt.show()
+graph_statistics_parameters('weight_grad')
+plt.ioff()
+graph_statistics_parameters('update_data_ratio')
 
 # PART 4: RESULTS: LOSSES AND SAMPLES
 # Loss of different splits
