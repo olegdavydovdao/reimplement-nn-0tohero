@@ -130,7 +130,7 @@ xs = [
 ]
 ys = [1.0, -1.0, -1.0, 1.0]
 
-# Gradient descent: forward, backward, update, check loss
+# Gradient descent: forward, backward, update, mse loss
 for k in range (300):
     ypred = [model(x) for x in xs]
     loss = sum((ypred-ys)**2 for ypred, ys in zip(ypred, ys))
