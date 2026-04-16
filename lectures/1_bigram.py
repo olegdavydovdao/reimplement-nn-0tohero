@@ -3,36 +3,11 @@
 # Import libraries
 import torch
 import torch.nn.functional as F
-import os
-import random
+from utils.names_preprocess import get_splits_names
 
-# Open and prepare the file
-path_data_str = os.path.join('data', 'names.txt')
-with open(path_data_str, 'r') as f:
-    names = f.read().splitlines()
-random.seed(42)
-random.shuffle(names)
-
-# Letters and their indices
-vocab = sorted(set(''.join(names)))
-vocab.insert(0, '.')
-sz_voc = len(vocab)
-itos = {i:s for i,s in enumerate(vocab)}
-stoi = {s:i for i,s in itos.items()}
-
-# Inputs and labels
-xs, ys = [], []
-for name in names:
-    chs = ['.'] + list(name) + ['.']
-    for (ch1, ch2) in zip(chs, chs[1:]):
-        ix1, ix2 = stoi[ch1], stoi[ch2]
-        xs.append(ix1); ys.append(ix2)
-xs = torch.tensor(xs)
-ys = torch.tensor(ys)
-num = xs.nelement()
-print(f'number of data points: {num}')
-print(xs[:5])
-print(ys[:5])
+Xtr,Ytr,Xval,Yval,Xte,Yte,itos,stoi,sz_voc,num_tr = get_splits_names(block_size=1)
+xs = Xtr
+ys = Ytr
 
 # PART 1: INIT, TRAIN AND SAMPLE
 # Parameters init and generator
@@ -44,7 +19,7 @@ for k in range (100):
     logits = xenc @ W
     counts = logits.exp()
     probs = counts / counts.sum(1, keepdim = True)
-    loss = -probs[torch.arange(num), ys].log().mean() + 0.01*(W**2).mean()
+    loss = -probs[torch.arange(num_tr), ys].log().mean() + 0.01*(W**2).mean()
     if k%100==0 or (k+1) % 100 == 0:
         print(f"{k} | loss = {loss.item()}")
     W.grad = None
