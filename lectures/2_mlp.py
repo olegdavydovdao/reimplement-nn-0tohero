@@ -49,11 +49,11 @@ n1 = int(0.8*len(names))
 n2 = int(0.9*len(names))
 
 Xtr,Ytr = build_split(names[:n1])
-Ytrsh = Ytr.shape[0]
+num_tr = Ytr.shape[0]
 Xval,Yval = build_split(names[n1:n2])
 Xte,Yte = build_split(names[n2:])
 print(f'total names: {len(names)}')
-print(f'bigram training examples: {Ytrsh}')
+print(f'bigram training examples: {num_tr}')
 print(f'bigram validation examples: {Yval.shape[0]}')
 print(f'bigram test examples: {Yte.shape[0]}')
 
@@ -79,7 +79,7 @@ lri = []
 
 # Train the net with mini-batches
 for i in range(n_iters):
-    batch = torch.randint(0, Ytrsh, (batch_size,), generator = g)
+    batch = torch.randint(0, num_tr, (batch_size,), generator = g)
     emb = C[Xtr[batch]]
     h = torch.tanh(emb.view(batch_size,W1.shape[0]) @ W1 + b1)
     logits = h @ W2 + b2

@@ -4,11 +4,14 @@
 import torch
 import torch.nn.functional as F
 import os
+import random
 
 # Open and prepare the file
 path_data_str = os.path.join('data', 'names.txt')
 with open(path_data_str, 'r') as f:
     names = f.read().splitlines()
+random.seed(42)
+random.shuffle(names)
 
 # Letters and their indices
 vocab = sorted(set(''.join(names)))
@@ -28,12 +31,14 @@ xs = torch.tensor(xs)
 ys = torch.tensor(ys)
 num = xs.nelement()
 print(f'number of data points: {num}')
+print(xs[:5])
+print(ys[:5])
 
-# PART 1: TRAIN AND SAMPLE
-# Parameters and generator
+# PART 1: INIT, TRAIN AND SAMPLE
+# Parameters init and generator
 g = torch.Generator().manual_seed(2147483647)
 W = torch.randn((27,27), generator = g, requires_grad = True)
-# Train the net: forward, backward, update, evaluate loss
+# Train the net: forward, backward, update, evaluate loss, cross entropy loss with regularization
 for k in range (100):
     xenc = F.one_hot(xs, num_classes = sz_voc).float()
     logits = xenc @ W
