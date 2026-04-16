@@ -31,8 +31,6 @@ def get_splits_names(block_size):
                 Y.append(ix)
                 context = context[1:] + [ix]
         X = torch.tensor(X)
-        if block_size == 1:
-            X = X.squeeze(1)
         Y = torch.tensor(Y)
         return X,Y
 

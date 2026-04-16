@@ -3,16 +3,19 @@
 # Import libraries
 import torch
 import torch.nn.functional as F
-from utils.names_preprocess import get_splits_names
+from utils.preprocess_names import get_splits_names
 
+# In original lecture, splits and shuffle names come later
+# I don't want to repeat slightly different code spelling but with the same logic
 Xtr,Ytr,Xval,Yval,Xte,Yte,itos,stoi,sz_voc,num_tr = get_splits_names(block_size=1)
-xs = Xtr
+xs = Xtr.squeeze(1)
 ys = Ytr
 
 # PART 1: INIT, TRAIN AND SAMPLE
 # Parameters init and generator
 g = torch.Generator().manual_seed(2147483647)
 W = torch.randn((27,27), generator = g, requires_grad = True)
+# Vanilla Gradient Descent
 # Train the net: forward, backward, update, evaluate loss, cross entropy loss with regularization
 for k in range (100):
     xenc = F.one_hot(xs, num_classes = sz_voc).float()
