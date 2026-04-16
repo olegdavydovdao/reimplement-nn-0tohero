@@ -37,7 +37,6 @@ def get_splits_names(block_size):
     n1 = int(0.8*len(names))
     n2 = int(0.9*len(names))
 
-
     Xtr,Ytr = build_split(names[:n1])
     num_tr = Ytr.shape[0]
     Xval,Yval = build_split(names[n1:n2])
