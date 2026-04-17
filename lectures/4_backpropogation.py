@@ -162,3 +162,77 @@ compare('hprebn', dhprebn_fast, hprebn)
 plt.figure(figsize=(5,5))
 plt.imshow(dlogits.detach(), 'gray')
 plt.show()
+
+# PART 4: TRAIN THE MODEL WITH MANUAL BACKPROP
+# Init parameters and logs
+g = torch.Generator().manual_seed(2147483647)
+C = torch.randn((sz_voc, n_emb), generator = g)
+W1 = torch.randn((n_emb*block_size, n_hidden), generator = g)*(5/3)/(n_emb*block_size)**0.5 # kaiming
+b1 = torch.randn(n_hidden, generator = g)*0.1
+W2 = torch.randn((n_hidden, sz_voc), generator = g)*0.1
+b2 = torch.randn(sz_voc, generator = g)*0.1
+gamma = torch.randn((1,n_hidden), generator = g)*0.1+1
+beta = torch.randn((1,n_hidden), generator = g)*0.1
+parameters = [C,W1,b1,W2,b2,gamma,beta]
+lossi = []
+
+for p in parameters:
+    p.requires_grad = True
+print(f'num parameters: {sum(p.nelement() for p in parameters)}')
+
+# Train the net with torch.no_grad()
+with torch.no_grad():
+    for i in range(n_iters):
+        batch = torch.randint(0, num_tr, (batch_size,), generator = g)
+        Xb, Yb = Xtr[batch], Ytr[batch]
+        emb = C[Xb]
+        embcat = emb.view(emb.shape[0], -1)
+        hprebn = embcat @ W1 + b1
+        bnmean = hprebn.mean(0,keepdim = True)
+        bnvar = hprebn.var(0,keepdim = True) # with Bessels
+        bnvar_inv = (bnvar + 1e-5)**-0.5
+        bnraw = (hprebn-bnmean)*bnvar_inv
+        hpreact = gamma * bnraw + beta
+        h = torch.tanh(hpreact) # 32,64
+        logits = h @ W2 + b2
+        
+        loss = F.cross_entropy(logits, Yb)
+        if (i+1)%(n_iters/10) == 0 or i == 0 or i == n_iters-1:
+            print(f'{i:6} | loss: {loss.item():.4f}')
+        lossi.append(loss.log10().item())
+    
+        # for p in parameters:
+        #     p.grad = None
+        # for inter_tr in [logits, h, hpreact, bnraw, bnvar_inv, 
+        #                  bnvar, bnmean, hprebn, embcat, emb]:
+        #     inter_tr.retain_grad()
+        # loss.backward()
+        
+        # Manual backprop with fast differentiation formulas
+        dlogits = F.softmax(logits, 1)
+        dlogits[range(n), Yb] -= 1
+        dlogits /= n
+        db2 = dlogits.sum(0)
+        dh = dlogits @ W2.T
+        dW2 = h.T @ dlogits
+        dhpreact = dh * (1-h**2)
+        dgamma = (dhpreact * bnraw).sum(0, keepdim=True)
+        dbeta = dhpreact.sum(0, keepdim=True)
+        dhprebn = gamma*bnvar_inv*(dhpreact - bnraw/(n-1)*(dhpreact*bnraw).sum(0) - dhpreact.sum(0)/n)
+        dembcat = dhprebn @ W1.T
+        dW1 = embcat.T @ dhprebn
+        db1 = dhprebn.sum(0)
+        demb = dembcat.view(emb.shape)
+        dC = torch.zeros_like(C)
+        for k in range(demb.shape[0]):
+            for j in range(demb.shape[1]):
+                ix = Xb[k,j]
+                dC[ix] += demb[k,j]
+    
+        d_grads = [dC,dW1,db1,dW2,db2,dgamma,dbeta]
+        
+        lri = lr if i < int(0.75*n_iters) else lr_decay
+        for p, d_grad in zip(parameters, d_grads):
+            # p.data -= lri * p.grad
+            p.data -= lri * d_grad
+    # (p.grad-d_grad).abs().max().item()
