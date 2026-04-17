@@ -10,7 +10,7 @@ from utils.preprocess_names import get_splits_names
 block_size = 3
 n_emb = 10
 n_hidden = 100
-n_iters = 10000
+n_iters = 1000
 batch_size = 32
 lr = 0.1
 lr_decay = 0.01
@@ -21,21 +21,25 @@ Xtr,Ytr,Xval,Yval,Xte,Yte,itos,stoi,sz_voc,num_tr = get_splits_names(block_size=
 print(f"Xtr.shape: {Xtr.shape}")
 
 # PART 1: INIT AND FORWARD PASS
+def model_init():
+    g = torch.Generator().manual_seed(2147483647)
+    C = torch.randn((sz_voc, n_emb), generator = g)
+    W1 = torch.randn((n_emb*block_size, n_hidden), generator = g)*(5/3)/(n_emb*block_size)**0.5
+    b1 = torch.randn(n_hidden, generator = g)*0.1
+    W2 = torch.randn((n_hidden, sz_voc), generator = g)*0.1
+    b2 = torch.randn(sz_voc, generator = g)*0.1
+    gamma = torch.randn((1,n_hidden), generator = g)*0.1+1
+    beta = torch.randn((1,n_hidden), generator = g)*0.1
+    parameters = [C,W1,b1,W2,b2,gamma,beta]
+
+    for p in parameters:
+        p.requires_grad = True
+    print(f'num parameters: {sum(p.nelement() for p in parameters)}')
+    return parameters, C, W1, b1, W2, b2, gamma, beta, g
+
+parameters, C, W1, b1, W2, b2, gamma, beta, g = model_init()
+
 # Get 1 batch
-g = torch.Generator().manual_seed(2147483647)
-C = torch.randn((sz_voc, n_emb), generator = g)
-W1 = torch.randn((n_emb*block_size, n_hidden), generator = g)*(5/3)/(n_emb*block_size)**0.5
-b1 = torch.randn(n_hidden, generator = g)*0.1
-W2 = torch.randn((n_hidden, sz_voc), generator = g)*0.1
-b2 = torch.randn(sz_voc, generator = g)*0.1
-gamma = torch.randn((1,n_hidden), generator = g)*0.1+1
-beta = torch.randn((1,n_hidden), generator = g)*0.1
-parameters = [C,W1,b1,W2,b2,gamma,beta]
-
-for p in parameters:
-    p.requires_grad = True
-print(f'num parameters: {sum(p.nelement() for p in parameters)}')
-
 batch = torch.randint(0, num_tr, (batch_size,), generator = g)
 Xb, Yb = Xtr[batch], Ytr[batch]
 
@@ -64,6 +68,7 @@ probs = counts * counts_sum_inv
 logprobs = probs.log() # 32,27
 loss = -logprobs[range(n), Yb].mean()
 
+# Retain gradients for all intermediate tensors
 for p in parameters:
   p.grad = None
 for inter in [logprobs, probs,counts_sum_inv, counts_sum, counts,
@@ -155,8 +160,8 @@ dlogits_fast /= n
 # Fast derivative of batchnorm
 dhprebn_fast = gamma*bnvar_inv*(dhpreact - bnraw/(n-1)*(dhpreact*bnraw).sum(0) - dhpreact.sum(0)/n)
 
-compare('logits', dlogits_fast, logits)
-compare('hprebn', dhprebn_fast, hprebn)
+compare('fast logits', dlogits_fast, logits)
+compare('fast hprebn', dhprebn_fast, hprebn)
 
 # activations derivative of logits
 plt.figure(figsize=(5,5))
@@ -165,20 +170,8 @@ plt.show()
 
 # PART 4: TRAIN THE MODEL WITH MANUAL BACKPROP
 # Init parameters and logs
-g = torch.Generator().manual_seed(2147483647)
-C = torch.randn((sz_voc, n_emb), generator = g)
-W1 = torch.randn((n_emb*block_size, n_hidden), generator = g)*(5/3)/(n_emb*block_size)**0.5 # kaiming
-b1 = torch.randn(n_hidden, generator = g)*0.1
-W2 = torch.randn((n_hidden, sz_voc), generator = g)*0.1
-b2 = torch.randn(sz_voc, generator = g)*0.1
-gamma = torch.randn((1,n_hidden), generator = g)*0.1+1
-beta = torch.randn((1,n_hidden), generator = g)*0.1
-parameters = [C,W1,b1,W2,b2,gamma,beta]
+parameters, C, W1, b1, W2, b2, gamma, beta, g = model_init()
 lossi = []
-
-for p in parameters:
-    p.requires_grad = True
-print(f'num parameters: {sum(p.nelement() for p in parameters)}')
 
 # Train the net with torch.no_grad()
 with torch.no_grad():
@@ -236,3 +229,63 @@ with torch.no_grad():
             # p.data -= lri * p.grad
             p.data -= lri * d_grad
     # (p.grad-d_grad).abs().max().item()
+
+# PART 5: RESULTS
+# Loss graph without noise
+plt.plot(torch.tensor(lossi).view(-1, 500).mean(1))
+# Mean and var of entire train set
+with torch.no_grad():
+    emb = C[Xtr]
+    embcat = emb.view(emb.shape[0], -1)
+    hprebn = embcat @ W1 + b1
+    bnmean = hprebn.mean(0,keepdim = True)
+    bnvar = hprebn.var(0,keepdim = True)
+    bnvar_inv = (bnvar + 1e-5)**-0.5
+    
+# Loss of different splits
+@torch.no_grad()
+def loss_split(split):
+    x,y = {
+        'train': (Xtr, Ytr),
+        'val': (Xval, Yval),
+        'test': (Xte, Yte),
+    }[split]
+
+    emb = C[x]
+    embcat = emb.view(emb.shape[0], -1)
+    hprebn = embcat @ W1 + b1
+    bnraw = (hprebn-bnmean)*bnvar_inv
+    hpreact = gamma * bnraw + beta
+    h = torch.tanh(hpreact) # 32,64
+    logits = h @ W2 + b2
+    
+    loss = F.cross_entropy(logits, y)
+    print(split, loss.item())
+    
+loss_split('train')
+loss_split('val')
+
+# Sample new names
+g = torch.Generator().manual_seed(2147483647)
+for _ in range(5):
+    context = [0] * block_size
+    new_name = []
+    while True:
+        emb = C[torch.tensor([context])] # 1, 3, 10
+        embcat = emb.view(emb.shape[0], -1)
+        hprebn = embcat @ W1 + b1
+        bnraw = (hprebn-bnmean)*bnvar_inv
+        hpreact = gamma * bnraw + beta
+        h = torch.tanh(hpreact)
+        logits = h @ W2 + b2
+        
+        probs = F.softmax(logits, 1) # 1,27
+        ix = torch.multinomial(probs, 1, generator = g).item()
+        context = context[1:] + [ix]
+        new_name.append(itos[ix])
+        if ix == 0:
+            break
+    print(''.join(new_name))
+
+# Test loss once at the end
+loss_split('test')
