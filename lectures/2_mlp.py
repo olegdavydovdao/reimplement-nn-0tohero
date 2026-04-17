@@ -9,12 +9,13 @@ from utils.preprocess_names import get_splits_names
 # Hyperparameters
 block_size = 3
 n_emb = 10
-n_hid = 200
+n_hidden = 200
 n_iters = 10000
 batch_size = 32
 lr = 0.1
 lr_decay = 0.01
 
+# Preprocess names.txt to feed into the model
 Xtr,Ytr,Xval,Yval,Xte,Yte,itos,stoi,sz_voc,num_tr = get_splits_names(block_size=block_size)
 print(f"Xtr.shape: {Xtr.shape}")
 
@@ -22,9 +23,9 @@ print(f"Xtr.shape: {Xtr.shape}")
 # Model init: parameters and logs
 g = torch.Generator().manual_seed(2147483647)
 C = torch.randn((sz_voc, n_emb), generator = g)
-W1 = torch.randn((n_emb*block_size, n_hid), generator = g)
-b1 = torch.randn(n_hid, generator = g)
-W2 = torch.randn((n_hid, sz_voc), generator = g)
+W1 = torch.randn((n_emb*block_size, n_hidden), generator = g)
+b1 = torch.randn(n_hidden, generator = g)
+W2 = torch.randn((n_hidden, sz_voc), generator = g)
 b2 = torch.randn(sz_voc, generator = g)
 parameters = [C,W1,b1,W2,b2]
 for p in parameters:
