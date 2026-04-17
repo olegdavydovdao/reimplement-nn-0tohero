@@ -100,3 +100,78 @@ class Sequential:
         return self.out
     def parameters(self):
         return [p for layer in self.layers for p in layer.parameters()]
+    
+# PART 2: INIT AND TRAIN
+# Layers as modules in stack, parameters and logs
+model = Sequential([ Embedding(sz_voc, n_emb),
+    FlattenConsecutive(n_consec), Linear(n_emb*n_consec, n_hidden, bias=False), BatchNorm1d(n_hidden), Tanh(),
+    FlattenConsecutive(n_consec), Linear(n_hidden*n_consec, n_hidden, bias=False), BatchNorm1d(n_hidden), Tanh(),
+    FlattenConsecutive(n_consec), Linear(n_hidden*n_consec, n_hidden, bias=False), BatchNorm1d(n_hidden), Tanh(),
+    Linear(n_hidden, sz_voc)
+])
+parameters = model.parameters()
+for p in parameters:
+    p.requires_grad = True
+print(f'num parameters: {sum(p.nelement() for p in parameters)}')
+
+with torch.no_grad():
+    model.layers[-1].weight *= 0.1
+
+lossi = []
+
+# Train the net
+for i in range(n_iters):
+    batch = torch.randint(0, num_tr, (batch_size,))
+    logits = model(Xtr[batch])
+    loss = F.cross_entropy(logits, Ytr[batch])
+    if (i+1)%(n_iters/10) == 0 or i == 0 or i == n_iters-1:
+        print(f'{i:6} | loss: {loss.item():.4f}')
+    lossi.append(loss.log10().item())
+
+    for p in parameters:
+        p.grad = None
+    loss.backward()
+
+    lri = lr if i < int(0.75*n_iters) else lr_decay
+    for p in parameters:
+        p.data -= lri * p.grad
+    # break
+
+# PART 3: RESULTS
+# Loss graph without noise
+plt.plot(torch.tensor(lossi).view(-1, 500).mean(1))
+# model.eval() as evaluation mode of model
+for layer in model.layers:
+    layer.training = False
+
+# Loss of different splits
+@torch.no_grad()
+def loss_split(split):
+    x,y = {
+        'train': (Xtr, Ytr),
+        'val': (Xval, Yval),
+        'test': (Xte, Yte),
+    }[split]
+    logits = model(x)
+    loss = F.cross_entropy(logits, y)
+    print(split, loss.item())
+
+loss_split('train')
+loss_split('val')
+
+# Sample new names
+for _ in range(5):
+    context = [0] * block_size
+    new_name = []
+    while True:
+        logits = model(torch.tensor([context]))
+        probs = F.softmax(logits, dim=1)
+        ix = torch.multinomial(probs, 1).item()
+        context = context[1:] + [ix]
+        new_name.append(itos[ix])
+        if ix == 0:
+            break
+    print(''.join(new_name))
+
+# Test loss once at the end
+loss_split('test')
