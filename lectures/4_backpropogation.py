@@ -72,3 +72,93 @@ for inter in [logprobs, probs,counts_sum_inv, counts_sum, counts,
           bnmean, hprebn, embcat, emb]:
     inter.retain_grad()
 loss.backward()
+
+# PART 2: MANUAL BACKWARD PASS AND COMPARE WITH .BACKWARD() OF PYTORCH
+# Compare my backprop with loss.backward()
+def compare(string, d_manual, tensor):
+    exactly = torch.all(d_manual == tensor.grad).item()
+    approximate = torch.allclose(d_manual, tensor.grad)
+    difference = (d_manual-tensor.grad).abs().max().item()
+    print(f'{string:15s} | exactly:{str(exactly):5s} | approximate:{str(approximate):5s} | max_difference:{difference}')
+
+# Manual backprop with atomic ops grad
+dlogprobs = torch.zeros_like(logprobs)
+dlogprobs[range(n), Yb] -= 1/n
+dprobs = dlogprobs * 1/probs
+dcounts_sum_inv = (dprobs * counts).sum(1, keepdim = True)
+dcounts = dprobs * counts_sum_inv
+dcounts_sum = dcounts_sum_inv * -counts_sum**-2
+dcounts += dcounts_sum * torch.ones_like(counts)
+dnorm_logits = dcounts * norm_logits.exp()
+dlogit_maxes = (dnorm_logits * -1).sum(1, keepdim = True)
+dlogits = dnorm_logits.clone()
+dlogits[torch.arange(n), logits.max(1).indices] += dlogit_maxes.squeeze(1)
+db2 = dlogits.sum(0)
+dh = dlogits @ W2.T
+dW2 = h.T @ dlogits
+dhpreact = dh * (1-h**2)
+dgamma = (dhpreact * bnraw).sum(0, keepdim=True)
+dbeta = dhpreact.sum(0, keepdim=True)
+dbnraw = dhpreact * gamma
+dbnvar_inv = (dbnraw * bndiff).sum(0, keepdim=True)
+dbndiff = dbnraw * bnvar_inv
+dbnvar = dbnvar_inv * -0.5*(bnvar + 1e-5)**-1.5*1.0
+dbndiff2 = dbnvar * (1/(n-1)) * torch.ones_like(bndiff2)
+dbndiff += dbndiff2 * (2.0 * bndiff)
+dhprebn = dbndiff.clone()
+dbnmean = (-dbndiff.clone()).sum(0, keepdim=True)
+dhprebn += dbnmean * (1/n) * torch.ones_like(hprebn)
+dembcat = dhprebn @ W1.T
+dW1 = embcat.T @ dhprebn
+db1 = dhprebn.sum(0)
+demb = dembcat.view(emb.shape)
+dC = torch.zeros_like(C)
+for i in range(demb.shape[0]):
+    for j in range(demb.shape[1]):
+        ix = Xb[i,j]
+        dC[ix] += demb[i,j]
+
+# Compare all results
+compare('logprobs', dlogprobs, logprobs)
+compare('probs', dprobs, probs)
+compare('counts_sum_inv', dcounts_sum_inv, counts_sum_inv)
+compare('counts_sum', dcounts_sum, counts_sum)
+compare('counts', dcounts, counts)
+compare('norm_logits', dnorm_logits, norm_logits)
+compare('logit_maxes', dlogit_maxes, logit_maxes)
+compare('logits', dlogits, logits)
+compare('h', dh, h)
+compare('W2', dW2, W2)
+compare('b2', db2, b2)
+compare('hpreact', dhpreact, hpreact)
+compare('gamma', dgamma, gamma)
+compare('beta', dbeta, beta)
+compare('bnraw', dbnraw, bnraw)
+compare('bnvar_inv', dbnvar_inv, bnvar_inv)
+compare('bnvar', dbnvar, bnvar)
+compare('bndiff2', dbndiff2, bndiff2)
+compare('bndiff', dbndiff, bndiff)
+compare('bnmean', dbnmean, bnmean)
+compare('hprebn', dhprebn, hprebn)
+compare('embcat', dembcat, embcat)
+compare('W1', dW1, W1)
+compare('b1', db1, b1)
+compare('emb', demb, emb)
+compare('C', dC, C)
+
+# PART 3: DERIVE GRAD THROUGH CROSS ENTROPY LOSS AND BATCHNORM
+# Fast derivative of cross entropy loss
+dlogits_fast = F.softmax(logits, 1)
+dlogits_fast[range(n), Yb] -= 1
+dlogits_fast /= n
+
+# Fast derivative of batchnorm
+dhprebn_fast = gamma*bnvar_inv*(dhpreact - bnraw/(n-1)*(dhpreact*bnraw).sum(0) - dhpreact.sum(0)/n)
+
+compare('logits', dlogits_fast, logits)
+compare('hprebn', dhprebn_fast, hprebn)
+
+# activations derivative of logits
+plt.figure(figsize=(5,5))
+plt.imshow(dlogits.detach(), 'gray')
+plt.show()
