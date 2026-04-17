@@ -17,7 +17,6 @@ lr_decay = 0.01
 
 # Preprocess names.txt to feed into the model
 Xtr,Ytr,Xval,Yval,Xte,Yte,itos,stoi,sz_voc,num_tr = get_splits_names(block_size=block_size)
-print(f"Xtr.shape: {Xtr.shape}")
 
 # PART 1: MODEL INIT, TRAINING
 # Model init: parameters and logs

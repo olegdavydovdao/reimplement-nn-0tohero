@@ -1,5 +1,5 @@
 # THEME: REUSABLE CODE LECTURE 1-5
-# PART 0: PREPARATION NAMES FILE TO FEED INTO NN
+# PART 0: PREPARATION NAMES.TXT DATASET
 # Import libraries
 import os
 import random
@@ -19,9 +19,10 @@ sz_voc = len(vocab)
 itos = {i:s for i,s in enumerate(vocab)}
 stoi = {s:i for i,s in itos.items()}
 
+# PART 1: CONVERTING NAMES.TXT INTO TENSORS OF INTEGERS TO FEED INTO NN
 # Reusable function
 def get_splits_names(block_size):
-    # Data preparation: input and labels, train/validation/test splits
+    # Inputs and labels, train/validation/test splits
     def build_split(names):
         X, Y = [], []
         for name in names:
@@ -46,8 +47,9 @@ def get_splits_names(block_size):
     print(f'bigram training examples: {num_tr}')
     print(f'bigram validation examples: {Yval.shape[0]}')
     print(f'bigram test examples: {Yte.shape[0]}')
+    print(f"Xtr.shape: {Xtr.shape}")
     return Xtr,Ytr,Xval,Yval,Xte,Yte,itos,stoi,sz_voc,num_tr
 
-# When launched only this file
+# When launched this file directly
 if __name__ == '__main__':
     get_splits_names(block_size=1)
