@@ -82,6 +82,7 @@ class Value:
                 for prev in n._prev:
                     funtopo(prev)
                 topo.append(n)
+        # Backward through topological graph
         funtopo(self)
         self.grad = 1.0
         for node in reversed(topo):
@@ -119,7 +120,7 @@ class MLP:
     def parameters(self):
         return [p for layer in self.layers for p in layer.parameters()]
     
-# PART 2: MLP TRAINING
+# PART 2: MLP INIT AND TRAINING
 # Prepare the model, inputs, labels
 model = MLP(3,[4,4,1])
 xs = [
@@ -130,8 +131,8 @@ xs = [
 ]
 ys = [1.0, -1.0, -1.0, 1.0]
 
-# Gradient descent: forward, backward, update, mse loss
-for k in range (300):
+# Gradient descent: forward, mse loss, backward, update
+for k in range (500):
     ypred = [model(x) for x in xs]
     loss = sum((ypred-ys)**2 for ypred, ys in zip(ypred, ys))
     for p in model.parameters():
@@ -139,8 +140,9 @@ for k in range (300):
     loss.backward()
     for p in model.parameters():
         p.data += -0.1 * p.grad
-    if k % 100 == 0 or (k+1)==300:
+    if k % 100 == 0 or (k+1)==500:
         print(f"{k:3} | loss = {loss.data}")
 
-# Results that should fit ys(labels)
-print(ypred)
+# Results ypred that should fit ys(labels)
+print(f"ypred: {ypred}")
+print(f"labels: {ys}")

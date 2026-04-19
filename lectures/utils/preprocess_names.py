@@ -44,6 +44,7 @@ def get_splits_names(block_size):
     Xval,Yval = build_split(names[n1:n2])
     Xte,Yte = build_split(names[n2:])
     print(f'total names: {len(names)}')
+    print(f'block_size: {block_size}')
     print(f'bigram training examples: {num_tr}')
     print(f'bigram validation examples: {Yval.shape[0]}')
     print(f'bigram test examples: {Yte.shape[0]}')
