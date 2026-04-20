@@ -15,8 +15,6 @@ with open(path_data_str, 'r', encoding='utf-8') as f:
 # Hyperparameters
 torch.manual_seed(1337)
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-# device = "cpu"
-print(f"device using: {device}")
 batch_size = 8
 context_length = 32
 emb_dim = 32
@@ -49,6 +47,7 @@ def get_batch(split):
     x, y = x.to(device), y.to(device)
     return x,y
 
+# PART 1: GPT ARCHITECTURE AND LOSS EVALUATION
 # Check loss at evaluation time
 @torch.no_grad()
 def loss_estimate():
@@ -66,7 +65,7 @@ def loss_estimate():
     model.train()
     return out
 
-# Single head self-attention
+# Single head of self-attention
 class Head(nn.Module):
     def __init__(self):
         super().__init__()
@@ -89,7 +88,7 @@ class Head(nn.Module):
         # for N_block == 2: new T - token who agregate previous tokens who themselves saw history of previous - hierarchical approach
         # i.e. level up abstraction level through sequintial Transformer blocks
 
-# Multiple heads of self-attention processing parallel and same input
+# Multiple heads of self-attention processing parallel with the same input
 class MultiHeadAttention(nn.Module):
     def __init__(self):
         super().__init__()
@@ -99,7 +98,7 @@ class MultiHeadAttention(nn.Module):
         out = torch.cat([h(x) for h in self.heads], dim=-1)
         return self.proj(out)
     
-# MLP block too think about whats happens in attention block
+# MLP block
 class FeedForward(nn.Module):
     def __init__(self):
         super().__init__()
@@ -125,7 +124,7 @@ class Block(nn.Module):
         x = x + self.dropout(self.fforward(self.ln2(x)))
         return x
 
-# Stack multiple class and layers bulding blocks into one architecture GPT
+# Stack multiple modules into one architecture GPT
 class Gpt(nn.Module):
     def __init__(self):
         super().__init__()
@@ -142,8 +141,6 @@ class Gpt(nn.Module):
         x = tok_emb + pos_emb # B,T,C
         x = self.blocks(x)
         logits = self.lm_head(self.ln_f(x)) # B,T,vocab_size
-
-
         # get loss
         if yb is None:
             loss = None
@@ -163,7 +160,9 @@ class Gpt(nn.Module):
             x = torch.cat((x, ix), dim=-1)
         return x # tensor of int
 
+# PART 2: INIT AND TRAIN
 # Initialization GPT
+print(f"device using: {device}")
 model = Gpt()
 model.to(device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
@@ -173,15 +172,15 @@ step_val_graph = []
 
 # Train GPT
 for i in range(max_iters):
-    # get intermidiate loss
-    if i % show_lossi==0 or i == max_iters-1 or i%print_lossi==0:
+    # Get intermidiate loss
+    if i % show_lossi==0 or i == max_iters-1 or i % print_lossi==0:
         lossi = loss_estimate()
         loss_val_graph.append(lossi["val"])
         step_val_graph.append(i)
-        if i%print_lossi==0:
+        if i % print_lossi==0 or i == max_iters-1:
             print(f'{i:5d} | train loss:{lossi['train']:.4f} | val loss:{lossi['val']:.4f}')
 
-    # train
+    # Forward, backward, update
     xb,yb = get_batch('train')
     optimizer.zero_grad()
     logits, loss = model(xb,yb)
@@ -189,7 +188,9 @@ for i in range(max_iters):
     loss_train_graph.append(loss_cpu_de)
     loss.backward()
     optimizer.step()
-    
+
+# PART 3: RESULTS
+# Loss graph
 legends = []
 plt.figure(figsize=(6,4))
 plt.plot(loss_train_graph)
