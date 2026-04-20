@@ -124,3 +124,41 @@ class Block(nn.Module):
         x = x + self.dropout(self.m_sa(self.ln1(x)))
         x = x + self.dropout(self.fforward(self.ln2(x)))
         return x
+
+# Stack multiple class and layers bulding blocks into one architecture GPT
+class Gpt(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.tok_emb_table = nn.Embedding(vocab_size, emb_dim)
+        self.pos_emb_table = nn.Embedding(context_length, emb_dim)
+        self.blocks = nn.Sequential(*[Block() for _ in range (N_blocks)])
+        self.ln_f = nn.LayerNorm(emb_dim)
+        self.lm_head = nn.Linear(emb_dim, vocab_size)
+
+    def forward(self, xb, yb=None):
+        tok_emb = self.tok_emb_table(xb)
+        B,T,C = tok_emb.shape # every row - next tokens with C information
+        pos_emb = self.pos_emb_table(torch.arange(T,device=device)) # T,C
+        x = tok_emb + pos_emb # B,T,C
+        x = self.blocks(x)
+        logits = self.lm_head(self.ln_f(x)) # B,T,vocab_size
+
+
+        # get loss
+        if yb is None:
+            loss = None
+        else:
+            logits = logits.view(B*T, vocab_size)
+            yb = yb.view(B*T)
+            loss = F.cross_entropy(logits, yb)
+        return logits, loss
+
+    def generate(self, x, max_new):
+        for _ in range(max_new):
+            x_context = x[:,-context_length:]
+            logits, loss = self(x_context)
+            f_logit = logits[:,-1,:] # B,C | take last who saw all running_context in last abstarction level
+            probs = F.softmax(f_logit,1)
+            ix = torch.multinomial(probs, 1) # B,1
+            x = torch.cat((x, ix), dim=-1)
+        return x # tensor of int
