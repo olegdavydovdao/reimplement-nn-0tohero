@@ -49,7 +49,7 @@ def merge(tokens, max_pair, new_token):
         new_tokens.append(new_chunk)
     return new_tokens
 
-# Train function of tokinization
+# Train function of tokinization with regex
 default_toks = 256
 vocab_size = 276
 extra_merges = vocab_size-default_toks
