@@ -24,3 +24,27 @@ list_text = pattern.findall(text)
 tokens = []
 for i in range(len(list_text)):
     tokens.append(list(list_text[i].encode('utf-8')))
+
+# Stats of pairs tokens
+def get_pair_frequency(tokens):
+    stats = {}
+    for chunk in tokens:
+        for pair in zip(chunk, chunk[1:]):
+            stats[pair] = stats.get(pair, 0) + 1
+    return stats
+
+# Update your tokens sequence
+def merge(tokens, max_pair, new_token):
+    new_tokens = []
+    for chunk in tokens:
+        i = 0
+        new_chunk = []
+        while i<len(chunk):
+            if i+1<len(chunk) and chunk[i]==max_pair[0] and chunk[i+1]==max_pair[1]:
+                new_chunk.append(new_token)
+                i += 2
+            else:
+                new_chunk.append(chunk[i])
+                i += 1
+        new_tokens.append(new_chunk)
+    return new_tokens
