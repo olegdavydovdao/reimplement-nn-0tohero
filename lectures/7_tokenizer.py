@@ -48,3 +48,15 @@ def merge(tokens, max_pair, new_token):
                 i += 1
         new_tokens.append(new_chunk)
     return new_tokens
+
+# Train function of tokinization
+default_toks = 256
+vocab_size = 276
+extra_merges = vocab_size-default_toks
+merges_main = {}
+for k in range(extra_merges):
+    pa_fr = get_pair_frequency(tokens)
+    max_pair = max(pa_fr, key=pa_fr.get)
+    new_token = k + default_toks
+    tokens = merge(tokens, max_pair, new_token)
+    merges_main[max_pair] = new_token
