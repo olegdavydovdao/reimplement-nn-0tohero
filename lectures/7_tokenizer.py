@@ -8,16 +8,17 @@ import regex as re
 import os
 
 # Data loading
-text_choise(split):
-    assert split in ['tiny', 'big'], "incorrect argument"
+def text_choise(split):
+    assert split in ['tiny', 'big', 'hello'], "incorrect argument in text_choise function"
     if split == 'big':
         path_data_str = os.path.join('data', 'shakespeare.txt')
         with open(path_data_str, 'r', encoding='utf-8') as f:
             text = f.read()
-        return text
+    elif split == 'hello':
+        text = 'hello world!'
     else:
         text = "Ｕｎｉｃｏｄｅ! 🅤🅝🅘🅒🅞🅓🅔‽ 🇺‌🇳‌🇮‌🇨‌🇴‌🇩‌🇪! 😄 The very name strikes fear and awe into the hearts of programmers worldwide. We all know we ought to “support Unicode” in our software (whatever that means—like using wchar_t for all the strings, right?). But Unicode can be abstruse, and diving into the thousand-page Unicode Standard plus its dozens of supplementary annexes, reports, and notes can be more than a little intimidating. I don’t blame programmers for still finding the whole thing mysterious, even 30 years after Unicode’s inception."
-        return text
+    return text
 text = text_choise('tiny')
 
 # PART 1: TOKENIZER TRAIN
@@ -93,3 +94,13 @@ def decode(stream_tokens):
     out_text = b''.join(itob[tok] for tok in stream_tokens)
     out_text = out_text.decode('utf-8', errors='replace')
     return out_text
+
+# PART 3: CHECK TOKENIZER WITH DIFFERENT DATASETS
+def check_trained_tokenizer(choise):
+    assert choise in ['tiny', 'big', 'hello'], "incorrect argument in check_trained_tokenizer function"
+    text = text_choise(choise)
+    check_text = decode(encode(text))
+    print(f"{choise} dataset encode/decode fit: {text == check_text}")
+check_trained_tokenizer('hello')
+check_trained_tokenizer('tiny')
+check_trained_tokenizer('big')
