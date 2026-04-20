@@ -10,10 +10,14 @@ import os
 # Data loading
 text_choise(split):
     assert split in ['tiny', 'big'], "incorrect argument"
-    path_data_str = os.path.join('data', 'shakespeare.txt')
-    with open(path_data_str, 'r', encoding='utf-8') as f:
-        text = f.read()
-    text = "Ｕｎｉｃｏｄｅ! 🅤🅝🅘🅒🅞🅓🅔‽ 🇺‌🇳‌🇮‌🇨‌🇴‌🇩‌🇪! 😄 The very name strikes fear and awe into the hearts of programmers worldwide. We all know we ought to “support Unicode” in our software (whatever that means—like using wchar_t for all the strings, right?). But Unicode can be abstruse, and diving into the thousand-page Unicode Standard plus its dozens of supplementary annexes, reports, and notes can be more than a little intimidating. I don’t blame programmers for still finding the whole thing mysterious, even 30 years after Unicode’s inception."
+    if split == 'big':
+        path_data_str = os.path.join('data', 'shakespeare.txt')
+        with open(path_data_str, 'r', encoding='utf-8') as f:
+            text = f.read()
+        return text
+    else:
+        text = "Ｕｎｉｃｏｄｅ! 🅤🅝🅘🅒🅞🅓🅔‽ 🇺‌🇳‌🇮‌🇨‌🇴‌🇩‌🇪! 😄 The very name strikes fear and awe into the hearts of programmers worldwide. We all know we ought to “support Unicode” in our software (whatever that means—like using wchar_t for all the strings, right?). But Unicode can be abstruse, and diving into the thousand-page Unicode Standard plus its dozens of supplementary annexes, reports, and notes can be more than a little intimidating. I don’t blame programmers for still finding the whole thing mysterious, even 30 years after Unicode’s inception."
+        return text
 text = text_choise('tiny')
 
 # PART 1: TOKENIZER TRAIN
@@ -60,3 +64,23 @@ for k in range(extra_merges):
     new_token = k + default_toks
     tokens = merge(tokens, max_pair, new_token)
     merges_main[max_pair] = new_token
+
+# PART 2: TOKENIZER INFERENCE
+# Encoder
+def encode(text):
+    list_text = pattern.findall(text)
+    # print (list_text)
+    tokens = []
+    for chunk_text in list_text:
+        tokens.append(list(chunk_text.encode('utf-8')))
+    # print(tokens)
+    while True:
+        pa_fr = get_pair_frequency(tokens)
+        pair_min_tok = min(pa_fr, key=lambda pair: merges_main.get(pair, float('inf')))
+        if pair_min_tok not in merges_main:
+            break
+        tokens = merge(tokens, pair_min_tok, merges_main[pair_min_tok])
+    stream_tokens = []
+    for i in range(len(tokens)):
+        stream_tokens.extend(tokens[i])
+    return stream_tokens
