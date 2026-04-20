@@ -166,7 +166,6 @@ class Gpt(nn.Module):
 # Initialization GPT
 model = Gpt()
 model.to(device)
-# import sys; sys.exit("debug")
 optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
 loss_train_graph = []
 loss_val_graph = []
@@ -186,7 +185,8 @@ for i in range(max_iters):
     xb,yb = get_batch('train')
     optimizer.zero_grad()
     logits, loss = model(xb,yb)
-    loss_train_graph.append(loss.detach())
+    loss_cpu_de = loss.detach().to('cpu')
+    loss_train_graph.append(loss_cpu_de)
     loss.backward()
     optimizer.step()
     
@@ -199,7 +199,8 @@ legends.append('val loss')
 plt.legend(legends)
 plt.title('loss graph')
 plt.xlabel('steps')
-plt.ylabel('loss');
+plt.ylabel('loss')
+plt.show()
 
 # Generate new text with trained GPT
 gen_ix = torch.zeros((1,1), dtype=torch.long, device=device)
