@@ -110,3 +110,17 @@ class FeedForward(nn.Module):
         )
     def forward(self, x):
         return self.ff_seq(x)
+    
+# Single transformer block
+class Block(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.ln1 = nn.LayerNorm(emb_dim)
+        self.m_sa = MultiHeadAttention()
+        self.ln2 = nn.LayerNorm(emb_dim)
+        self.fforward = FeedForward()
+        self.dropout = nn.Dropout(p_drop)
+    def forward(self, x):
+        x = x + self.dropout(self.m_sa(self.ln1(x)))
+        x = x + self.dropout(self.fforward(self.ln2(x)))
+        return x
