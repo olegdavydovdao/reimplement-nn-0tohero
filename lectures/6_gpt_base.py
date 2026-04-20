@@ -162,3 +162,29 @@ class Gpt(nn.Module):
             ix = torch.multinomial(probs, 1) # B,1
             x = torch.cat((x, ix), dim=-1)
         return x # tensor of int
+
+# Initialization GPT
+model = Gpt()
+model.to(device)
+optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
+loss_train_graph = []
+loss_val_graph = []
+step_val_graph = []
+
+# Train GPT
+for i in range(max_iters):
+    # get intermidiate loss
+    if i % show_lossi==0 or i == max_iters-1 or i%print_lossi==0:
+        lossi = loss_estimate()
+        loss_val_graph.append(lossi["val"])
+        step_val_graph.append(i)
+        if i%print_lossi==0:
+            print(f'{i:5d} | train loss:{lossi['train']:.4f} | val loss:{lossi['val']:.4f}')
+
+    # train
+    xb,yb = get_batch('train')
+    optimizer.zero_grad()
+    logits, loss = model(xb,yb)
+    loss_train_graph.append(loss.detach())
+    loss.backward()
+    optimizer.step()
