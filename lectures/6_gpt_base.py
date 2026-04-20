@@ -188,3 +188,20 @@ for i in range(max_iters):
     loss_train_graph.append(loss.detach())
     loss.backward()
     optimizer.step()
+    
+legends = []
+plt.figure(figsize=(6,4))
+plt.plot(loss_train_graph)
+legends.append('train loss')
+plt.plot(step_val_graph, loss_val_graph)
+legends.append('val loss')
+plt.legend(legends)
+plt.title('loss graph')
+plt.xlabel('steps')
+plt.ylabel('loss');
+
+# Generate new text with trained GPT
+gen_ix = torch.zeros((1,1), dtype=torch.long, device=device)
+gen_ixs = model.generate(gen_ix, max_new=100)
+gen_list = gen_ixs[0].tolist()
+print(decode(gen_list))
