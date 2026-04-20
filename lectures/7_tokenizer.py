@@ -84,3 +84,12 @@ def encode(text):
     for i in range(len(tokens)):
         stream_tokens.extend(tokens[i])
     return stream_tokens
+
+# Decoder and dict from tokens to bytes
+itob = {i: bytes([i]) for i in range(256)}
+for (half0, half1),new_token in merges_main.items():
+    itob[new_token] = itob[half0] + itob[half1]
+def decode(stream_tokens):
+    out_text = b''.join(itob[tok] for tok in stream_tokens)
+    out_text = out_text.decode('utf-8', errors='replace')
+    return out_text
