@@ -88,3 +88,13 @@ class Head(nn.Module):
         return out # B, T, H
         # for N_block == 2: new T - token who agregate previous tokens who themselves saw history of previous - hierarchical approach
         # i.e. level up abstraction level through sequintial Transformer blocks
+
+# Multiple heads of self-attention processing parallel and same input
+class MultiHeadAttention(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.heads = nn.ModuleList([Head() for _ in range(n_heads)])
+        self.proj = nn.Linear(emb_dim, emb_dim)
+    def forward(self, x):
+        out = torch.cat([h(x) for h in self.heads], dim=-1)
+        return self.proj(out)
