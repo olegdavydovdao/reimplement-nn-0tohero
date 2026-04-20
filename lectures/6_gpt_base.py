@@ -65,3 +65,26 @@ def loss_estimate():
         out[split] = loss_m.item()
     model.train()
     return out
+
+# Single head self-attention
+class Head(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.query = nn.Linear(emb_dim, head_dim,bias=False)
+        self.key = nn.Linear(emb_dim, head_dim,bias=False)
+        self.value = nn.Linear(emb_dim, head_dim,bias=False)
+        self.register_buffer('tril', torch.tril(torch.ones(context_length,context_length)))
+        self.dropout = nn.Dropout(p_drop)
+    def forward(self, x):
+        B,T,C = x.shape
+        q = self.query(x) # B, T, H
+        k = self.key(x)
+        v = self.value(x) # new T - new token
+        aff = q @ k.transpose(-2, -1) / head_dim**0.5 # new T - token who appreciated previous tokens
+        aff = aff.masked_fill(self.tril[:T, :T]==0, float('-inf')) # B, T, T
+        aff = F.softmax(aff, -1) # aff is affinity
+        aff = self.dropout(aff)
+        out = aff @ v # new T - token who agregate previous tokens
+        return out # B, T, H
+        # for N_block == 2: new T - token who agregate previous tokens who themselves saw history of previous - hierarchical approach
+        # i.e. level up abstraction level through sequintial Transformer blocks
