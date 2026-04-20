@@ -166,6 +166,7 @@ class Gpt(nn.Module):
 # Initialization GPT
 model = Gpt()
 model.to(device)
+# import sys; sys.exit("debug")
 optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
 loss_train_graph = []
 loss_val_graph = []
