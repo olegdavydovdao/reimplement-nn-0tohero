@@ -139,6 +139,7 @@ for i in range(n_iters):
 # PART 3: RESULTS
 # Loss graph without noise
 plt.plot(torch.tensor(lossi).view(-1, 500).mean(1))
+plt.show()
 # model.eval() as evaluation mode of model
 for layer in model.layers:
     layer.training = False

@@ -64,10 +64,9 @@ for i in range(n_iters):
     # stepi.append(i)
 
 # PART 3: RESULTS
-# Different graphs
+# Different graphs, lr value choice
 # plt.plot(lrei, lossi)
 # plt.plot(lri, lossi)
-# plt.plot(stepi, lossi)
 plt.plot(lossi)
 plt.show()
 

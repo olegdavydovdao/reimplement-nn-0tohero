@@ -232,6 +232,7 @@ with torch.no_grad():
 # PART 5: RESULTS
 # Loss graph without noise
 plt.plot(torch.tensor(lossi).view(-1, 500).mean(1))
+plt.show()
 # Mean and var of entire train set
 with torch.no_grad():
     emb = C[Xtr]
