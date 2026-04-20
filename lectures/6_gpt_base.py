@@ -24,8 +24,8 @@ head_dim = emb_dim//n_heads
 p_drop = 0.02
 lr = 1e-3
 max_iters = 5000
-show_lossi = 200
-interval_lossi = 100
+show_lossi = 100
+interval_lossi = 25
 print_lossi = 500
 
 # Data preprocessing, batch function
@@ -59,9 +59,9 @@ def loss_estimate():
         for k in range(interval_lossi):
             xb, yb = get_batch(split)
             logits, loss = model(xb, yb)
-            loss_m[k] = loss
+            loss_m[k] = loss # detach() no need because @torch.no_grad()
         loss_m = loss_m.mean()
-        out[split] = loss_m.item()
+        out[split] = loss_m.item() # item() move python float to cpu
     model.train()
     return out
 
@@ -85,8 +85,6 @@ class Head(nn.Module):
         aff = self.dropout(aff)
         out = aff @ v # new T - token who agregate previous tokens
         return out # B, T, H
-        # for N_block == 2: new T - token who agregate previous tokens who themselves saw history of previous - hierarchical approach
-        # i.e. level up abstraction level through sequintial Transformer blocks
 
 # Multiple heads of self-attention processing parallel with the same input
 class MultiHeadAttention(nn.Module):
@@ -131,6 +129,8 @@ class Gpt(nn.Module):
         self.tok_emb_table = nn.Embedding(vocab_size, emb_dim)
         self.pos_emb_table = nn.Embedding(context_length, emb_dim)
         self.blocks = nn.Sequential(*[Block() for _ in range (N_blocks)])
+        # for N_block == 2: new T - token who agregate previous tokens who themselves saw history of previous - hierarchical approach
+        # i.e. level up abstraction level through sequintial Transformer blocks
         self.ln_f = nn.LayerNorm(emb_dim)
         self.lm_head = nn.Linear(emb_dim, vocab_size)
 
