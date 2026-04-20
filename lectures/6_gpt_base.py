@@ -98,3 +98,15 @@ class MultiHeadAttention(nn.Module):
     def forward(self, x):
         out = torch.cat([h(x) for h in self.heads], dim=-1)
         return self.proj(out)
+    
+# MLP block too think about whats happens in attention block
+class FeedForward(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.ff_seq = nn.Sequential(
+            nn.Linear(emb_dim, 4*emb_dim),
+            nn.ReLU(),
+            nn.Linear(4*emb_dim, emb_dim), # == self.proj
+        )
+    def forward(self, x):
+        return self.ff_seq(x)
