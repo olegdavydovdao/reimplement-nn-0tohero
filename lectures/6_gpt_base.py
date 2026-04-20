@@ -30,7 +30,7 @@ show_lossi = 200
 interval_lossi = 100
 print_lossi = 500
 
-# Data preproccesing, batch function
+# Data preprocessing, batch function
 tokens = sorted(set(text))
 vocab_size = len(tokens)
 itos = {i:s for i,s in enumerate(tokens)}
@@ -48,3 +48,20 @@ def get_batch(split):
     y = torch.stack([data[ix+1:ix+1+context_length] for ix in ixs])
     x, y = x.to(device), y.to(device)
     return x,y
+
+# Check loss at evaluation time
+@torch.no_grad()
+def loss_estimate():
+    model.eval()
+    splits = ['train', 'val']
+    out = {}
+    for split in splits:
+        loss_m = torch.zeros(interval_lossi)
+        for k in range(interval_lossi):
+            xb, yb = get_batch(split)
+            logits, loss = model(xb, yb)
+            loss_m[k] = loss
+        loss_m = loss_m.mean()
+        out[split] = loss_m.item()
+    model.train()
+    return out
