@@ -117,3 +117,22 @@ class DataLoader:
             self.reset()
         x, y = x.to(self.device), y.to(self.device)
         return x,y
+
+# Self-attention with multiple head
+class MultiHeadAttention(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        assert config.emb_dim==config.head_dim*config.num_heads, 'wrong heads and its dim'
+        self.qkv = nn.Linear(config.emb_dim, 3*config.emb_dim)
+        self.proj = nn.Linear(config.emb_dim, config.emb_dim)
+        self.proj.FLAG = 1
+
+    def forward(self,x):
+        B,T,C = x.shape
+        qkv = self.qkv(x)
+        q,k,v = qkv.split(config.emb_dim, 2)
+        q,k,v = [m.view(B, T, config.num_heads, config.head_dim).transpose(1,2) for m in [q,k,v]]
+        x = F.scaled_dot_product_attention(q,k,v, dropout_p=config.prob_dropout, is_causal=True) # B, n, T, H | 2,4,256,64
+        x = x.transpose(1,2).contiguous().view(B, T, C)
+        x = self.proj(x)
+        return x
