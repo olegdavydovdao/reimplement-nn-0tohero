@@ -9,7 +9,7 @@ import os
 
 # Data loading
 def text_choise(split):
-    assert split in ['tiny', 'big', 'hello'], "incorrect argument in text_choise function"
+    assert split in ['tiny', 'big', 'hello'], "'tiny' | 'big' | 'hello' is valid arguments"
     if split == 'big':
         path_data_str = os.path.join('data', 'shakespeare.txt')
         with open(path_data_str, 'r', encoding='utf-8') as f:
@@ -67,14 +67,12 @@ for k in range(extra_merges):
     merges_main[max_pair] = new_token
 
 # PART 2: TOKENIZER INFERENCE
-# Encoder
+# Encoder with merges_main dict
 def encode(text):
     list_text = pattern.findall(text)
-    # print (list_text)
     tokens = []
     for chunk_text in list_text:
         tokens.append(list(chunk_text.encode('utf-8')))
-    # print(tokens)
     while True:
         pa_fr = get_pair_frequency(tokens)
         pair_min_tok = min(pa_fr, key=lambda pair: merges_main.get(pair, float('inf')))
@@ -97,10 +95,9 @@ def decode(stream_tokens):
 
 # PART 3: CHECK TOKENIZER WITH DIFFERENT DATASETS
 def check_trained_tokenizer(choise):
-    assert choise in ['tiny', 'big', 'hello'], "incorrect argument in check_trained_tokenizer function"
     text = text_choise(choise)
     check_text = decode(encode(text))
-    print(f"{choise} dataset encode/decode fit: {text == check_text}")
+    print(f"{choise} dataset decode(encode(text)) fit: {text == check_text}")
 check_trained_tokenizer('hello')
 check_trained_tokenizer('tiny')
 check_trained_tokenizer('big')
