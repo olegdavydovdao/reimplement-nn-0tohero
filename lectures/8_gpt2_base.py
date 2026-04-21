@@ -391,3 +391,17 @@ for step in range(config.train_steps):
     # break
 if config.ddp_bool:
     dist.destroy_process_group()
+
+# PART 4: Loss graph
+legends = []
+plt.figure(figsize=(6,4))
+plt.plot(loss_train_graph)
+legends.append('my gpt(124M) train loss')
+plt.plot(step_val_graph, loss_val_graph)
+legends.append('my gpt(124M) val loss')
+plt.axhline(y=3.2924, color='red', linestyle=':')
+legends.append('OpenAI GPT-2(124M) checkpoint val loss')
+plt.legend(legends)
+plt.title('loss graph')
+plt.xlabel('steps')
+plt.ylabel('loss');
