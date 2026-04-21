@@ -151,3 +151,18 @@ class MLP(nn.Module):
         x = self.actfunc(x)
         x = self.proj(x)
         return x
+
+# Decoder transformer block
+class Block(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.ln_1 = nn.LayerNorm(config.emb_dim)
+        self.mh_attn = MultiHeadAttention(config)
+        self.ln_2 = nn.LayerNorm(config.emb_dim)
+        self.mlp = MLP(config)
+        self.dropout = nn.Dropout(config.prob_dropout)
+
+    def forward(self,x):
+        x = x + self.dropout(self.mh_attn(self.ln_1(x)))
+        x = x + self.dropout(self.mlp(self.ln_2(x)))
+        return x
