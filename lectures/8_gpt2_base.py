@@ -287,3 +287,107 @@ else:
 loss_train_graph = []
 loss_val_graph = []
 step_val_graph = []
+
+# PART 3: TRAIN, LOSS EVAL, SAMPLE
+# Train gpt2, evaluate validation loss, generate new tokens
+for step in range(config.train_steps):
+    # break # for debugging
+    t0 = time.time()
+    # Validation evaluate
+    if step % config.val_gen_step == 0 or step+1==config.train_steps:
+        model.eval()
+        with torch.no_grad():
+            val_loss = torch.zeros(config.num_loop_val)
+            for i in range(config.num_loop_val):
+                # val_loader.reset()
+                x, y = val_loader.next_batch()
+                logits, loss = model(x,y)
+                val_loss[i] = loss.detach()
+            val_loss = val_loss.mean()
+            if config.ddp_bool:
+                dist.all_reduce(val_loss, op=dist.ReduceOp.AVG)
+            # rng for generate new toks
+            rng = torch.Generator(device=config.device)
+            rng.manual_seed(2+config.unique_rank)
+            if config.master_process:
+                print(f'---- step:{step} | val_loss: {val_loss:.4f} ----')
+                loss_val_graph.append(val_loss.item())
+                step_val_graph.append(step)
+                with open(file_path, 'a') as f:
+                    f.write(f'---- step:{step} | val_loss: {val_loss:.4f} ----\n')
+                if step>0 and (step % config.checkpoint_interval == 0 or step+1==config.train_steps):
+                    checkpoint_path = os.path.join(log_dir, f'model_{step:4d}.pt')
+                    checkpoint={
+                        'model.state_dict': raw_model.state_dict(),
+                        'model.config': raw_model.config,
+                        'step': step,
+                        'val_loss': val_loss.item(),
+                        'optimizer.state_dict': optimizer.state_dict(),
+                        'sheduler_state': scheduler.state_dict(),
+                        'rng_state_cpu': torch.get_rng_state(), # for torch.manual_seed(40)
+                        'rng_state_cuda': torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,# for torch.cuda.manual_seed(40)
+                        'custom_rng_state': rng.get_state(),
+                        'scaler_state_dict': scaler.state_dict()
+                    }
+                    torch.save(checkpoint, checkpoint_path)
+
+        # Generate new tokens: in no_grad and model.eval
+            if step+1==config.train_steps or step ==0:
+                gen = config.tokenizer.encode("How do you like that, Elon Musk?")
+                gen = torch.tensor(gen).unsqueeze(0).repeat(config.batch_gen,1)
+                gen = gen.to(config.device)
+                for _ in range(config.max_gen_tokens-len(gen)):
+                    logits, loss = model(gen)
+                    logits = logits[:,-1,:]
+                    probs = F.softmax(logits, dim=-1)
+                    topk_values, topk_indices = torch.topk(probs, config.topk_gen_variants, dim=-1)
+                    new_gen = torch.multinomial(topk_values, num_samples=1, generator=rng)
+                    new_gen = torch.gather(topk_indices, -1, new_gen)
+                    gen = torch.cat((gen, new_gen), dim=-1)
+                gen = gen.tolist()
+                for k in range(len(gen)):
+                    gen_str = config.tokenizer.decode(gen[k])
+                    # without master_process
+                    print(f"rank:{config.unique_rank} | sample_k:{k} | {gen_str}")
+                    with open(file_path, 'a') as f:
+                        f.write(f"rank:{config.unique_rank} | sample_k:{k} | {gen_str}\n")
+    # Training
+        model.train()
+    optimizer.zero_grad()
+    loss_total = 0.0
+    for micro_step in range (config.grad_accum_steps):
+        x, y = train_loader.next_batch()
+        if config.ddp_bool:
+            model.require_backward_grad_sync = (micro_step+1==config.grad_accum_steps) # model with ddp wrapper
+        if 'cuda' in config.device:
+            data_type = torch.float16 if config.gpu_t4_bool else torch.bfloat16
+            with torch.autocast(device_type='cuda', dtype=data_type):
+                logits, loss = model(x,y)
+        else: # for cpu
+            logits, loss = model(x,y)
+        loss = loss/config.grad_accum_steps
+        loss_total += loss.detach()
+        scaler.scale(loss).backward() # instead loss.backward()
+    scaler.unscale_(optimizer) # fp16 -> fp32 | grad_unscale = grad/scaler
+    norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+    scaler.step(optimizer) # instead optimizer.step()
+    scaler.update()
+    if config.ddp_bool:
+        dist.all_reduce(loss_total, op = dist.ReduceOp.AVG)
+    current_lr = scheduler.get_last_lr()
+    # optim_cur_lr = optimizer.param_groups[0]['lr'] # other way check lr
+    scheduler.step()
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
+    t1 = time.time()
+    dt = t1-t0
+    tokens_per_step = config.batches_size*config.context_size*config.world_size*config.grad_accum_steps
+    assert config.total_batch_tokens==tokens_per_step, 'wrong tokens_per_step'
+    if config.master_process:
+        print(f"step:{step:4d} | loss_total:{loss_total.item():.4f} | current_lr:{current_lr[0]:.2e} | norm:{norm:.2f} | dt:{dt:.2f} | tok/sec: {tokens_per_step/dt:.2f}")
+        loss_train_graph.append(loss_total.item())
+        with open(file_path, 'a') as f:
+            f.write(f"step:{step:4d} | loss_total:{loss_total.item():.4f} | current_lr:{current_lr[0]:.2e} | norm:{norm:.2f} | dt:{dt:.2f} | tok/sec: {tokens_per_step/dt:.2f}\n")
+    # break
+if config.ddp_bool:
+    dist.destroy_process_group()
