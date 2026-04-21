@@ -82,3 +82,38 @@ class Config:
     # gradient accumulation hyperparameter
     assert total_batch_tokens % (batches_size*context_size*world_size) == 0, 'total_batch_tokens % != 0'
     grad_accum_steps = total_batch_tokens//(batches_size*context_size*world_size)
+
+# Pre-process data and get batch
+class DataLoader:
+    def __init__(self, config, split):
+        assert split in {'train', 'val'}
+        # Data loading
+        path_data_str = os.path.join('data', 'shakespeare.txt')
+        with open(path_data_str, 'r', encoding='utf-8') as f:
+            text = f.read()
+        tokens = config.tokenizer.encode(text)
+        limit = int(len(tokens)*config.сoef_train_val_split)
+        tokens = tokens[:limit] if split=='train' else tokens[limit:]
+        self.tokens = torch.tensor(tokens)
+        self.B = config.batches_size
+        self.T = config.context_size
+        self.device = config.device
+        self.reset()
+        if split == 'train':
+            config.steps_for_epoch_train = len(tokens)//config.total_batch_tokens
+        else:
+            config.steps_for_epoch_val = len(tokens)//config.total_batch_tokens
+        steps_for_epoch = config.steps_for_epoch_train if split=='train' else config.steps_for_epoch_val
+        if config.master_process:
+            print(f'{split:5s} | len_tok={len(tokens)} | epoch:{steps_for_epoch} steps')
+    def reset(self):
+        self.current_position = config.unique_rank*self.B*self.T
+    def next_batch(self):
+        buffer = self.tokens[self.current_position:self.current_position+self.B*self.T+1]
+        x = buffer[:-1].view(self.B, self.T)
+        y = buffer[1:].view(self.B, self.T)
+        self.current_position += self.B*self.T*config.world_size
+        if self.current_position+config.world_size*self.B*self.T+1 > len(self.tokens):
+            self.reset()
+        x, y = x.to(self.device), y.to(self.device)
+        return x,y
