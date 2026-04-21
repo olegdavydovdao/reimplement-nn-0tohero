@@ -1,5 +1,5 @@
 # THEME: GPT2 BASE MODEL
-# PART 0: DATA PREPROCESSING
+# PART 0: DATA PREPROCESSING AND HYPERPARAMETERS
 # Import libriries
 import torch
 import torch.nn as nn
@@ -118,6 +118,7 @@ class DataLoader:
         x, y = x.to(self.device), y.to(self.device)
         return x,y
 
+# PART 1: GPT LOGIC
 # Self-attention with multiple head
 class MultiHeadAttention(nn.Module):
     def __init__(self, config):
@@ -239,6 +240,7 @@ class GPT2(nn.Module):
         )
         return optimizer, scheduler
 
+# PART 2: INITIALIZATION
 # Reproducibility, precision, init config
 torch.manual_seed(40)
 if torch.cuda.is_available():
@@ -259,3 +261,29 @@ if config.master_process:
     print(f'total_batch_tokens: {config.total_batch_tokens}')
     print(f'grad_accum_steps: {config.grad_accum_steps}')
     print(f"ddp_use: {config.ddp_bool} | master_process_device: {config.device}")
+
+# Inizialization model
+train_loader = DataLoader(config, 'train')
+val_loader = DataLoader(config, 'val')
+config.train_steps = config.steps_for_epoch_train*config.epochs
+config.warmup_iters = int(config.train_steps * 0.1)
+config.cosine_iters_end = int(config.train_steps * 0.8)
+config.num_loop_val = config.steps_for_epoch_val
+if config.master_process:
+    print(f'{config.train_steps=}')
+    print(f'{config.warmup_iters=} | {config.cosine_iters_end=} | {config.num_loop_val=}')
+model = GPT2(config)
+model.to(config.device)
+if config.compile_bool:
+    model = torch.compile(model) # raw_model = model._orig_mod
+if config.ddp_bool:
+    model = DDP(model, device_ids=[config.local_rank])
+raw_model = model.module if config.ddp_bool else model
+optimizer, scheduler = raw_model.get_optimizer_lrshed(weight_decay2d=config.weight_decay2d, lr=config.learning_rate, betas=config.betas)
+if torch.cuda.is_available():
+    scaler = torch.amp.GradScaler('cuda', enabled = config.gpu_t4_bool)
+else:
+    scaler = torch.amp.GradScaler('cpu', enabled = False) # its just skip and scaler.update is optimizer.update
+loss_train_graph = []
+loss_val_graph = []
+step_val_graph = []
