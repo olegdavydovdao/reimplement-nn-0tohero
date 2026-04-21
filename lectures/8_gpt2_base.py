@@ -136,3 +136,18 @@ class MultiHeadAttention(nn.Module):
         x = x.transpose(1,2).contiguous().view(B, T, C)
         x = self.proj(x)
         return x
+
+# Feed-forward module
+class MLP(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.linear = nn.Linear(config.emb_dim, config.expand_mlp_dim*config.emb_dim)
+        # self.actfunc = nn.GELU(approximate = 'tanh')
+        self.actfunc = nn.SiLU()
+        self.proj = nn.Linear(config.expand_mlp_dim*config.emb_dim, config.emb_dim)
+        self.proj.FLAG = 1
+    def forward(self, x):
+        x = self.linear(x)
+        x = self.actfunc(x)
+        x = self.proj(x)
+        return x
