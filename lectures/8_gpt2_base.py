@@ -166,3 +166,75 @@ class Block(nn.Module):
         x = x + self.dropout(self.mh_attn(self.ln_1(x)))
         x = x + self.dropout(self.mlp(self.ln_2(x)))
         return x
+
+# GPT2 model, manual ititialization weights, optimizer, lr scheduler
+class GPT2(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.config = config
+        self.transformer = nn.ModuleDict(dict(
+            tok_emb_table = nn.Embedding(self.config.vocab_size, self.config.emb_dim),
+            pos_emb_table = nn.Embedding(self.config.context_size, self.config.emb_dim),
+            h = nn.ModuleList([Block(self.config) for _ in range(self.config.N_tran_blocks)]),
+            ln_f = nn.LayerNorm(self.config.emb_dim)
+        ))
+        self.lm_head = nn.Linear(self.config.emb_dim, self.config.vocab_size, bias=False)
+        self.transformer.tok_emb_table.weight = self.lm_head.weight
+        self.apply(self.init_weights_)
+
+    def init_weights_(self, module):
+        std = 0.02
+        if isinstance(module, nn.Linear):
+            if hasattr(module, 'FLAG'):
+                std *= (2*config.N_tran_blocks)**-0.5
+            nn.init.normal_(module.weight, mean=0.0, std=std)
+            if module.bias is not None:
+                nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Embedding):
+            nn.init.normal_(module.weight, mean=0.0, std=std)
+
+    def forward(self,x,y=None):
+        assert x.size(1)<=config.context_size, 't > context_size'
+        emb_tok = self.transformer.tok_emb_table(x)
+        pos_buf = torch.arange(x.size(1), device=self.config.device)
+        pos_tok = self.transformer.pos_emb_table(pos_buf)
+        x = emb_tok + pos_tok
+        for h in self.transformer.h:
+            x = h(x)
+        x = self.transformer.ln_f(x)
+        logits = self.lm_head(x)
+        loss = None
+        if y is not None:
+            logits = logits.view(config.batches_size*config.context_size, config.vocab_size)
+            y = y.view(config.batches_size*config.context_size)
+            loss = F.cross_entropy(logits, y)
+        return logits, loss
+
+    def get_optimizer_lrshed(self, weight_decay2d, lr, betas):
+        # Oprimizer and its groups
+        all_params = {n:t for n,t in self.named_parameters() if t.requires_grad}
+        d2_params = [t for n,t in all_params.items() if t.ndim>=2]
+        d1_params = [t for n,t in all_params.items() if t.ndim<=1]
+        optim_groups = [
+            {'params': d2_params, 'weight_decay': weight_decay2d},
+            {'params': d1_params, 'weight_decay': 0.0}
+        ] # optimizer.param_groups
+        fused_bool = None
+        if ('cuda' in config.device) and ('fused' in inspect.signature(torch.optim.AdamW).parameters):
+            fused_bool = True
+        optimizer = torch.optim.AdamW(optim_groups, lr=lr, betas=betas, fused=fused_bool)
+        if config.master_process:
+            print(f"d2_params: {sum(p.numel() for p in d2_params):,}")
+            print(f"d1_params: {sum(p.numel() for p in d1_params):,}")
+            print(f"fused AdamW:{fused_bool}")
+
+        # Lr scheduler
+        warmup_sched = LinearLR(optimizer, start_factor=0.1, end_factor=1.0, total_iters=config.warmup_iters)
+        decay_sched = CosineAnnealingLR(optimizer, T_max=config.cosine_iters_end-config.warmup_iters, eta_min=config.min_lr)
+        min_sched = ConstantLR(optimizer, factor = 0.1, total_iters=config.train_steps-config.cosine_iters_end)
+        scheduler = SequentialLR(
+            optimizer,
+            schedulers=[warmup_sched, decay_sched, min_sched],
+            milestones=[config.warmup_iters, config.cosine_iters_end]
+        )
+        return optimizer, scheduler
