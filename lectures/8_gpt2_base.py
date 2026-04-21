@@ -23,20 +23,20 @@ class Config:
 
     # Model hyperparams
     # 124M_new         |# 20M_old
-    emb_dim: int = 768 #256
+    emb_dim: int = 256#768 #256
     vocab_size: int = 50304
-    context_size: int = 1024 #128
-    batches_size: int = 8 # 4
-    total_batch_tokens: int = 1024*8 # 1024
-    N_tran_blocks: int = 12 #4
+    context_size: int = 128#1024 #128
+    batches_size: int = 4#8 # 4
+    total_batch_tokens: int = 1024#1024*8 # 1024
+    N_tran_blocks: int = 4#12 #4
     prob_dropout: float = 0.02
-    num_heads: int = 12 #4
+    num_heads: int = 4#12 #4
     head_dim: int = emb_dim//num_heads
     expand_mlp_dim: int = 4
     сoef_train_val_split: float = 0.95
 
     # Optimization, evaluation, generation hyperparams
-    learning_rate: float = 6e-4 #1e-3
+    learning_rate: float = 1e-3#6e-4 #1e-3
     min_lr: float = learning_rate * 0.1
     betas: tuple = (0.9, 0.95)
     num_loop_val: int = None
@@ -238,3 +238,24 @@ class GPT2(nn.Module):
             milestones=[config.warmup_iters, config.cosine_iters_end]
         )
         return optimizer, scheduler
+
+# Reproducibility, precision, init config
+torch.manual_seed(40)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(42)
+    # torch.backends.cudnn.deterministic = True
+    # torch.backends.cudnn.benchmark = False
+torch.set_float32_matmul_precision('medium') # 'high'=tf32; 'medium'=bf16 | only to internal matmul
+config = Config()
+
+# Create directory and file to log history of model updates
+if config.master_process:
+    log_dir = 'log_dir_gpt2'
+    os.makedirs(log_dir, exist_ok=True)
+    file_path = os.path.join(log_dir, 'log_file.txt')
+    with open(file_path, 'w') as f:
+        pass
+    print(file_path, type(file_path))
+    print(f'total_batch_tokens: {config.total_batch_tokens}')
+    print(f'grad_accum_steps: {config.grad_accum_steps}')
+    print(f"ddp_use: {config.ddp_bool} | master_process_device: {config.device}")
