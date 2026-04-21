@@ -22,21 +22,35 @@ class Config:
     tokenizer = tiktoken.get_encoding('gpt2')
 
     # Model hyperparams
-    # 124M_new         |# 20M_old
-    emb_dim: int = 256#768 #256
+    # I can't run 124m model on my gpu but in readme i show graph 124m trained model with help google colab gpu t4
+    def hyperparams_chage_for_num_params(num_params):
+        assert num_params in ['16m', '124m'], "'16m' | '124m' argument expected in choise_num_params function"
+        # 124M | 16M parameters model choise
+        if num_params == '16m':
+            emb_dim: int = 256
+            context_size: int = 128
+            batches_size: int = 4
+            total_batch_tokens: int = 1024
+            N_tran_blocks: int = 4
+            num_heads: int = 4
+            learning_rate: float = 1e-3
+        else:
+            emb_dim: int = 768
+            context_size: int = 1024
+            batches_size: int = 8
+            total_batch_tokens: int = 1024*8
+            N_tran_blocks: int = 12
+            num_heads: int = 12
+            learning_rate: float = 6e-4
+        return emb_dim, context_size, batches_size, total_batch_tokens, N_tran_blocks, num_heads, learning_rate
+    emb_dim, context_size, batches_size, total_batch_tokens, N_tran_blocks, num_heads, learning_rate = hyperparams_chage_for_num_params('16m')
+
+    # Optimization, evaluation, generation hyperparams
     vocab_size: int = 50304
-    context_size: int = 128#1024 #128
-    batches_size: int = 4#8 # 4
-    total_batch_tokens: int = 1024#1024*8 # 1024
-    N_tran_blocks: int = 4#12 #4
     prob_dropout: float = 0.02
-    num_heads: int = 4#12 #4
     head_dim: int = emb_dim//num_heads
     expand_mlp_dim: int = 4
     сoef_train_val_split: float = 0.95
-
-    # Optimization, evaluation, generation hyperparams
-    learning_rate: float = 1e-3#6e-4 #1e-3
     min_lr: float = learning_rate * 0.1
     betas: tuple = (0.9, 0.95)
     num_loop_val: int = None
@@ -71,11 +85,15 @@ class Config:
         world_size = 1
         if torch.cuda.is_available():
             device: str = 'cuda'
-            gpu_t4_bool = True
-            compile_bool = True # torch.compile break rng reproducibility
+            gpu_bool = True
+            major, minor = torch.cuda.get_device_capability(0)
+            if major >= 7:
+                compile_bool = True
+            else:
+                compile_bool = False
         else:
             device: str = 'cpu'
-            gpu_t4_bool = False
+            gpu_bool = False
             compile_bool = False
     master_process = unique_rank==0
 
@@ -84,6 +102,7 @@ class Config:
     grad_accum_steps = total_batch_tokens//(batches_size*context_size*world_size)
 
 # Pre-process data and get batch
+# Note: I use only shakespeare.txt only instead fineweb.edu 10B dataset in orginal lecture
 class DataLoader:
     def __init__(self, config, split):
         assert split in {'train', 'val'}
@@ -252,12 +271,12 @@ config = Config()
 
 # Create directory and file to log history of model updates
 if config.master_process:
-    log_dir = 'log_dir_gpt2'
+    log_dir = os.path.join('lectures','logs','8_gpt2_logs')
     os.makedirs(log_dir, exist_ok=True)
-    file_path = os.path.join(log_dir, 'log_file.txt')
+    file_path = os.path.join(log_dir, '8_gpt2_logs.txt')
     with open(file_path, 'w') as f:
         pass
-    print(file_path, type(file_path))
+    print(f"compile_available: {config.compile_bool}")
     print(f'total_batch_tokens: {config.total_batch_tokens}')
     print(f'grad_accum_steps: {config.grad_accum_steps}')
     print(f"ddp_use: {config.ddp_bool} | master_process_device: {config.device}")
@@ -281,12 +300,13 @@ if config.ddp_bool:
 raw_model = model.module if config.ddp_bool else model
 optimizer, scheduler = raw_model.get_optimizer_lrshed(weight_decay2d=config.weight_decay2d, lr=config.learning_rate, betas=config.betas)
 if torch.cuda.is_available():
-    scaler = torch.amp.GradScaler('cuda', enabled = config.gpu_t4_bool)
+    scaler = torch.amp.GradScaler('cuda', enabled = config.gpu_bool)
 else:
     scaler = torch.amp.GradScaler('cpu', enabled = False) # its just skip and scaler.update is optimizer.update
 loss_train_graph = []
 loss_val_graph = []
 step_val_graph = []
+dt_list = []
 
 # PART 3: TRAIN, LOSS EVAL, SAMPLE
 # Train gpt2, evaluate validation loss, generate new tokens
@@ -294,7 +314,7 @@ for step in range(config.train_steps):
     # break # for debugging
     t0 = time.time()
     # Validation evaluate
-    if step % config.val_gen_step == 0 or step+1==config.train_steps:
+    if step % config.val_gen_step == 0 or step+1==config.train_steps or step % (config.train_steps//4)==0:
         model.eval()
         with torch.no_grad():
             val_loss = torch.zeros(config.num_loop_val)
@@ -316,7 +336,7 @@ for step in range(config.train_steps):
                 with open(file_path, 'a') as f:
                     f.write(f'---- step:{step} | val_loss: {val_loss:.4f} ----\n')
                 if step>0 and (step % config.checkpoint_interval == 0 or step+1==config.train_steps):
-                    checkpoint_path = os.path.join(log_dir, f'model_{step:4d}.pt')
+                    checkpoint_path = os.path.join(log_dir, f'8_gpt2_model_state_{step:4d}_step.pt')
                     checkpoint={
                         'model.state_dict': raw_model.state_dict(),
                         'model.config': raw_model.config,
@@ -332,7 +352,7 @@ for step in range(config.train_steps):
                     torch.save(checkpoint, checkpoint_path)
 
         # Generate new tokens: in no_grad and model.eval
-            if step+1==config.train_steps or step ==0:
+            if (step+1==config.train_steps or step % (config.train_steps//4)==0) and step != 0:
                 gen = config.tokenizer.encode("How do you like that, Elon Musk?")
                 gen = torch.tensor(gen).unsqueeze(0).repeat(config.batch_gen,1)
                 gen = gen.to(config.device)
@@ -360,7 +380,7 @@ for step in range(config.train_steps):
         if config.ddp_bool:
             model.require_backward_grad_sync = (micro_step+1==config.grad_accum_steps) # model with ddp wrapper
         if 'cuda' in config.device:
-            data_type = torch.float16 if config.gpu_t4_bool else torch.bfloat16
+            data_type = torch.float16 if config.gpu_bool else torch.bfloat16
             with torch.autocast(device_type='cuda', dtype=data_type):
                 logits, loss = model(x,y)
         else: # for cpu
@@ -386,13 +406,20 @@ for step in range(config.train_steps):
     if config.master_process:
         print(f"step:{step:4d} | loss_total:{loss_total.item():.4f} | current_lr:{current_lr[0]:.2e} | norm:{norm:.2f} | dt:{dt:.2f} | tok/sec: {tokens_per_step/dt:.2f}")
         loss_train_graph.append(loss_total.item())
+        dt_list.append(dt)
         with open(file_path, 'a') as f:
-            f.write(f"step:{step:4d} | loss_total:{loss_total.item():.4f} | current_lr:{current_lr[0]:.2e} | norm:{norm:.2f} | dt:{dt:.2f} | tok/sec: {tokens_per_step/dt:.2f}\n")
+            f.write(f"step:{step:4d} | loss_total:{loss_total.item():.4f} | current_lr:{current_lr[0]:.2e} | norm:{norm:.2f}\n")
     # break
 if config.ddp_bool:
     dist.destroy_process_group()
+dt_mean = torch.tensor(dt_list).mean().item()
+tok_per_sec_mean = tokens_per_step / dt_mean
+with open(file_path, 'a') as f:
+    f.write(f"dt_mean: {dt_mean} | tok_per_sec_mean: {tok_per_sec_mean}\n")
 
 # PART 4: Loss graph
+print(f"num train datapoints in graph: {len(loss_train_graph)}")
+print(f"num val datapoints in graph: {len(loss_val_graph)}")
 legends = []
 plt.figure(figsize=(6,4))
 plt.plot(loss_train_graph)
@@ -404,4 +431,6 @@ legends.append('OpenAI GPT-2(124M) checkpoint val loss')
 plt.legend(legends)
 plt.title('loss graph')
 plt.xlabel('steps')
-plt.ylabel('loss');
+plt.ylabel('loss')
+fig_path = os.path.join('lectures', 'logs', '8_gpt2_logs', '8_graph_loss.png')
+plt.savefig(fig_path)
