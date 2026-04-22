@@ -14,6 +14,7 @@ import torch.distributed as dist
 from torch.distributed import init_process_group, destroy_process_group
 import inspect
 import matplotlib.pyplot as plt
+from utils.savefig import save_figf
 
 # Congfiguration and hyperparameters for model
 @dataclass
@@ -271,7 +272,8 @@ config = Config()
 
 # Create directory and file to log history of model updates
 if config.master_process:
-    log_dir = os.path.join('lectures','logs','8_gpt2_logs')
+    dir_sublogs = '8_gpt2_logs'
+    log_dir = os.path.join('logs', dir_sublogs)
     os.makedirs(log_dir, exist_ok=True)
     file_path = os.path.join(log_dir, '8_gpt2_logs.txt')
     with open(file_path, 'w') as f:
@@ -432,5 +434,4 @@ plt.legend(legends)
 plt.title('loss graph')
 plt.xlabel('steps')
 plt.ylabel('loss')
-fig_path = os.path.join('lectures', 'logs', '8_gpt2_logs', '8_graph_loss.png')
-plt.savefig(fig_path)
+save_figf(dir_sublogs, 'loss_graph.png')

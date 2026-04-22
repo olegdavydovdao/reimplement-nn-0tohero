@@ -5,12 +5,13 @@ import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from utils.preprocess_names import get_splits_names
+from utils.savefig import save_figf
 
 # Hyperparameters
 block_size = 3
 n_emb = 10
 n_hidden = 100
-n_iters = 1000
+n_iters = 10000
 batch_size = 32
 lr = 0.1
 lr_decay = 0.01
@@ -165,7 +166,8 @@ compare('fast hprebn', dhprebn_fast, hprebn)
 # activations derivative of logits
 plt.figure(figsize=(5,5))
 plt.imshow(dlogits.detach(), 'gray')
-plt.show()
+dir_sublogs = '4_backpropogation_logs'
+save_figf(dir_sublogs, 'derivative_logits.png')
 
 # PART 4: TRAIN THE MODEL WITH MANUAL BACKPROP
 # Init parameters and logs
@@ -231,8 +233,8 @@ with torch.no_grad():
 
 # PART 5: RESULTS
 # Loss graph without noise
-plt.plot(torch.tensor(lossi).view(-1, 500).mean(1))
-plt.show()
+plt.plot(torch.tensor(lossi).view(-1, 100).mean(1))
+save_figf(dir_sublogs, 'log10_loss_graph.png')
 # Mean and var of entire train set
 with torch.no_grad():
     emb = C[Xtr]

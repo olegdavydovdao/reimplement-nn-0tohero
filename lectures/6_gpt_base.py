@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import os
+from utils.savefig import save_figf
 
 # Data loading
 path_data_str = os.path.join('data', 'shakespeare.txt')
@@ -166,6 +167,8 @@ print(f"device using: {device}")
 model = Gpt()
 model.to(device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
+num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+print(f"total num params: {num_params}")
 loss_train_graph = []
 loss_val_graph = []
 step_val_graph = []
@@ -201,7 +204,8 @@ plt.legend(legends)
 plt.title('loss graph')
 plt.xlabel('steps')
 plt.ylabel('loss')
-plt.show()
+dir_sublogs = '6_gpt_logs'
+save_figf(dir_sublogs, 'loss_graph.png')
 
 # Generate new text with trained GPT
 gen_ix = torch.zeros((1,1), dtype=torch.long, device=device)

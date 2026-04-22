@@ -5,12 +5,13 @@ import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from utils.preprocess_names import get_splits_names
+from utils.savefig import save_figf
 
 # Hyperparameters
 block_size = 3
 n_emb = 10
 n_hidden = 100
-n_iters = 1000
+n_iters = 10000
 batch_size = 32
 lr = 0.1
 lr_decay = 0.01
@@ -120,7 +121,7 @@ for i in range(n_iters):
     #     break
 
 # PART 4: NN STATISTICS AND THEIR GRAPHS
-plt.ion()
+dir_sublogs = '3_batchnorm_and_statistics_logs'
 def graph_statistics_activations(choice):
     assert choice in ['activations', 'activations_gradients']
     if choice == 'activations':
@@ -142,7 +143,7 @@ def graph_statistics_activations(choice):
             legends.append(f'{layer.__class__.__name__} {i}, {tuple(t.data.shape)}')
     plt.legend(legends);
     plt.title('activation distribution') if choice == 'activations' else plt.title('activation gradients distribution')
-    plt.show()
+    save_figf(dir_sublogs, f'{choice}.png')
 graph_statistics_activations('activations')
 graph_statistics_activations('activations_gradients')
 
@@ -168,9 +169,8 @@ def graph_statistics_parameters(choice):
             legends.append(f'{i}, {tuple(t.data.shape)}')
     plt.legend(legends);
     plt.title('weight gradient distribution') if choice == 'weight_grad' else plt.title('update/data ratio')
-    plt.show()
+    save_figf(dir_sublogs, f'{choice}.png')
 graph_statistics_parameters('weight_grad')
-plt.ioff()
 graph_statistics_parameters('update_data_ratio')
 
 # PART 5: RESULTS

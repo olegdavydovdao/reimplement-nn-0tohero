@@ -5,13 +5,14 @@ import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from utils.preprocess_names import get_splits_names
+from utils.savefig import save_figf
 
 # Hyperparameters
 torch.manual_seed(42)
 block_size = 8
 n_emb = 10
 n_hidden = 32
-n_iters = 1000
+n_iters = 10000
 batch_size = 32
 lr = 0.1
 lr_decay = 0.01
@@ -138,8 +139,9 @@ for i in range(n_iters):
 
 # PART 3: RESULTS
 # Loss graph without noise
-plt.plot(torch.tensor(lossi).view(-1, 500).mean(1))
-plt.show()
+plt.plot(torch.tensor(lossi).view(-1, 100).mean(1))
+dir_sublogs = '5_cnn_1d_logs'
+save_figf(dir_sublogs, 'log10_loss_graph.png')
 # model.eval() as evaluation mode of model
 for layer in model.layers:
     layer.training = False

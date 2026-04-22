@@ -5,6 +5,7 @@ import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from utils.preprocess_names import get_splits_names
+from utils.savefig import save_figf
 
 # Hyperparameters
 block_size = 3
@@ -68,7 +69,8 @@ for i in range(n_iters):
 # plt.plot(lrei, lossi)
 # plt.plot(lri, lossi)
 plt.plot(lossi)
-plt.show()
+dir_sublogs = '2_mlp_logs'
+save_figf(dir_sublogs, 'log_loss_graph.png')
 
 # Different losses
 @torch.no_grad()
@@ -110,7 +112,7 @@ plt.scatter(C4[:,0], C4[:,1], s=200)
 for i in range(C4.shape[0]):
     plt.text(C4[i,0], C4[i,1], itos[i], ha='center', va='center', color='white')
 plt.grid()
-plt.show()
+save_figf(dir_sublogs, 'emb_visual_2d.png')
 
 # Test loss once at the end
 loss_split('test')
