@@ -21,6 +21,7 @@ from utils.savefig import save_figf
 class Config:
     # Initialization tokenizer
     tokenizer = tiktoken.get_encoding('gpt2')
+    num_p = '124m'
 
     # Model hyperparams
     # I can't run 124m model on my gpu but in readme i show graph 124m trained model with help google colab gpu t4
@@ -44,7 +45,7 @@ class Config:
             num_heads: int = 12
             learning_rate: float = 6e-4
         return emb_dim, context_size, batches_size, total_batch_tokens, N_tran_blocks, num_heads, learning_rate
-    emb_dim, context_size, batches_size, total_batch_tokens, N_tran_blocks, num_heads, learning_rate = hyperparams_chage_for_num_params('16m')
+    emb_dim, context_size, batches_size, total_batch_tokens, N_tran_blocks, num_heads, learning_rate = hyperparams_chage_for_num_params(num_p)
 
     # Optimization, evaluation, generation hyperparams
     vocab_size: int = 50304
@@ -61,7 +62,7 @@ class Config:
     topk_gen_variants: int = 50
 
     # Steps hyperparameters
-    epochs: int = 1
+    epochs: int = 8
     steps_for_epoch_train = None # calculate later in code
     steps_for_epoch_val = None
     train_steps = None # 313
@@ -425,13 +426,13 @@ print(f"num val datapoints in graph: {len(loss_val_graph)}")
 legends = []
 plt.figure(figsize=(6,4))
 plt.plot(loss_train_graph)
-legends.append('my gpt(16M) train loss')
+legends.append(f'my gpt({config.num_p}) train loss')
 plt.plot(step_val_graph, loss_val_graph)
-legends.append('my gpt(16M) val loss')
+legends.append(f'my gpt({config.num_p}) val loss')
 plt.axhline(y=3.2924, color='red', linestyle=':')
 legends.append('OpenAI GPT-2(124M) checkpoint val loss')
 plt.legend(legends)
 plt.title('loss graph')
 plt.xlabel('steps')
 plt.ylabel('loss')
-save_figf(dir_sublogs, 'loss_graph_16m.png')
+save_figf(dir_sublogs, f'loss_graph_{config.num_p}.png')
