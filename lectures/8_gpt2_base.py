@@ -21,14 +21,14 @@ from utils.savefig import save_figf
 class Config:
     # Initialization tokenizer
     tokenizer = tiktoken.get_encoding('gpt2')
-    num_p = '124m'
+    num_p = '124M'
 
     # Model hyperparams
     # I can't run 124m model on my gpu but in readme i show graph 124m trained model with help google colab gpu t4
     def hyperparams_chage_for_num_params(num_params):
-        assert num_params in ['16m', '124m'], "'16m' | '124m' argument expected in choise_num_params function"
+        assert num_params in ['16M', '124M'], "'16M' | '124M' argument expected in choise_num_params function"
         # 124M | 16M parameters model choise
-        if num_params == '16m':
+        if num_params == '16M':
             emb_dim: int = 256
             context_size: int = 128
             batches_size: int = 4
@@ -426,13 +426,13 @@ print(f"num val datapoints in graph: {len(loss_val_graph)}")
 legends = []
 plt.figure(figsize=(6,4))
 plt.plot(loss_train_graph)
-legends.append(f'my gpt({config.num_p}) train loss')
+legends.append(f'My GPT-2({config.num_p}) train loss')
 plt.plot(step_val_graph, loss_val_graph)
-legends.append(f'my gpt({config.num_p}) val loss')
+legends.append(f'My GPT-2({config.num_p}) val loss')
 plt.axhline(y=3.2924, color='red', linestyle=':')
 legends.append('OpenAI GPT-2(124M) checkpoint val loss')
 plt.legend(legends)
-plt.title('loss graph')
+plt.title('Loss graph from 8_gpt2_base.py')
 plt.xlabel('steps')
 plt.ylabel('loss')
 save_figf(dir_sublogs, f'loss_graph_{config.num_p}.png')
