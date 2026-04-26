@@ -42,6 +42,25 @@ uv sync
 
 # 4. Run code in lectures
 uv run lectures/#choose_file.py
+
+# 5. Run ddp (if you have 1 node with >= 2 GPUs)
+uv run torchrun
+```
+## 8_gpt2_base sample
+Context feed into model: `What makes a lord worthy?`  
+Result:
+```
+What makes a lord worthy?
+
+I am this? to us it to the noble heart from the mother as be we, I would the father.
+
+Why-ADas you and you.
+And the soul with a brother-ESre I'll I shall thee, we did she may it,
+
+A:
+And a good that, if byer in our love for not.
+ROMELLFKE:
+Now we think this had it do, then's love to my lord.
 ```
 ## License
 MIT
