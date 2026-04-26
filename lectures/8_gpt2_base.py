@@ -356,7 +356,7 @@ for step in range(config.train_steps):
 
         # Generate new tokens: in no_grad and model.eval
             if (step+1==config.train_steps or step % (config.train_steps//4)==0) and step != 0:
-                gen = config.tokenizer.encode("Who is worthy of the throne?")
+                gen = config.tokenizer.encode("What makes a lord worthy?")
                 gen = torch.tensor(gen).unsqueeze(0).repeat(config.batch_gen,1)
                 gen = gen.to(config.device)
                 for _ in range(config.max_gen_tokens-len(gen)):
