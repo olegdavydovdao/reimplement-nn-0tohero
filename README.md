@@ -2,6 +2,7 @@
 ![Loss gpt 124m](logs/8_gpt2_logs/loss_graph_124m.png)   
 Reimplement from scratch "Neural Networks: Zero to Hero" Andrej Karpathy's course.  
 This course is an introduction to neural networks from the basics to modern architectures such as the GPT in code.  
+Tech stack: Python, Pytorch.
 Links to the original course: [GitHub](https://github.com/karpathy/nn-zero-to-hero), [YouTube](https://www.youtube.com/playlist?list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ), [Site](https://karpathy.ai/zero-to-hero.html).
 ### Course completion process
 1. Watch youtube video lecture and write notebook code in parallel.
@@ -26,7 +27,7 @@ There are only 4 folders that matter in the project:
 - **`5_cnn_1d`** — wavenet architecture as 1 dimensional cnn for text.
 - **`6_gpt_base`** — transformer and gpt architecture pretraining stage without finetuning.
 - **`7_tokenizer`** — bpe(byte pair encoding) algorithm for training and inference tokenizer.
-- **`8_gpt2_base`** — OpenAI gpt2(124m parameters) architecture efficient ddp pretraining stage without finetuning. I train gpt2 on small dataset roughly 300K tokens 8 epochs.
+- **`8_gpt2_base`** — OpenAI gpt2(124m parameters) architecture efficient ddp pretraining stage without finetuning. I train gpt2 on small dataset roughly 300K tokens 8 epochs. This can be improved by expanding the dataset (for example FineWeb-Edu 10B tokens dataset) and training time.
 
 ## Quick start
 **Requirements**: [uv](https://docs.astral.sh/uv/), Git, Python 3.12+, a single Nvidia GPU for lecture 6,8 (tested on Nvidia T4 and Geforce GTX 1050Ti).  
