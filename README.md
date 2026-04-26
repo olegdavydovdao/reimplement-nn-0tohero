@@ -43,7 +43,7 @@ uv sync
 # 4. Run code in lectures
 uv run lectures/#choose_file.py
 
-# 5. Run ddp (if you have 1 node with >= 2 GPUs)
+# 5. Run 8_gpt2_base with ddp (if you have 1 node with >= 2 GPUs). --nproc_per_node=n, where n is number of GPUs 
 uv run torchrun --standalone --nproc_per_node=2 lectures/8_gpt2_base.py
 ```
 ## 8_gpt2_base sample
