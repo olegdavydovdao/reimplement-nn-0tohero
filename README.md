@@ -44,7 +44,7 @@ uv sync
 uv run lectures/#choose_file.py
 
 # 5. Run ddp (if you have 1 node with >= 2 GPUs)
-uv run torchrun
+uv run torchrun --standalone --nproc_per_node=2 lectures/8_gpt2_base.py
 ```
 ## 8_gpt2_base sample
 Context feed into model: `What makes a lord worthy?`  
