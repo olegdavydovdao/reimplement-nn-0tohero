@@ -57,7 +57,7 @@ class Config:
     betas: tuple = (0.9, 0.95)
     num_loop_val: int = None
     weight_decay2d: int = 0.1
-    batch_gen: int = 4
+    batch_gen: int = 2
     max_gen_tokens: int = 100
     topk_gen_variants: int = 50
 
