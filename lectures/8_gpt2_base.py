@@ -57,7 +57,7 @@ class Config:
     betas: tuple = (0.9, 0.95)
     num_loop_val: int = None
     weight_decay2d: int = 0.1
-    batch_gen: int = 2
+    batch_gen: int = 4
     max_gen_tokens: int = 100
     topk_gen_variants: int = 50
 
@@ -356,7 +356,7 @@ for step in range(config.train_steps):
 
         # Generate new tokens: in no_grad and model.eval
             if (step+1==config.train_steps or step % (config.train_steps//4)==0) and step != 0:
-                gen = config.tokenizer.encode("How do you like that, Elon Musk?")
+                gen = config.tokenizer.encode("Who is worthy of the throne?")
                 gen = torch.tensor(gen).unsqueeze(0).repeat(config.batch_gen,1)
                 gen = gen.to(config.device)
                 for _ in range(config.max_gen_tokens-len(gen)):
@@ -371,9 +371,9 @@ for step in range(config.train_steps):
                 for k in range(len(gen)):
                     gen_str = config.tokenizer.decode(gen[k])
                     # without master_process
-                    print(f"rank:{config.unique_rank} | sample_k:{k} | {gen_str}")
+                    print(f"> === < rank:{config.unique_rank} | sample_k:{k} | {gen_str}")
                     with open(file_path, 'a') as f:
-                        f.write(f"rank:{config.unique_rank} | sample_k:{k} | {gen_str}\n")
+                        f.write(f"> === < | rank:{config.unique_rank} | sample_k:{k} | {gen_str}\n")
     # Training
         model.train()
     optimizer.zero_grad()
