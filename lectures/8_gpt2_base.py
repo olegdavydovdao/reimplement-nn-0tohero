@@ -81,6 +81,8 @@ class Config:
         world_size = int(os.environ["WORLD_SIZE"])
         device = f"cuda:{local_rank}"
         torch.cuda.set_device(device)
+        compile_bool = True
+        gpu_bool = True
     else:
         local_rank = 0
         unique_rank = 0
@@ -328,6 +330,7 @@ for step in range(config.train_steps):
                 val_loss[i] = loss.detach()
             val_loss = val_loss.mean()
             if config.ddp_bool:
+                val_loss = val_loss.to(device=config.device)
                 dist.all_reduce(val_loss, op=dist.ReduceOp.AVG)
             # rng for generate new toks
             rng = torch.Generator(device=config.device)
