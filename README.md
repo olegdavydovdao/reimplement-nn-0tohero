@@ -52,16 +52,15 @@ Context feed into model: `What makes a lord worthy?`
 Result:
 ```
 What makes a lord worthy?
-
-I am this? to us it to the noble heart from the mother as be we, I would the father.
-
-Why-ADas you and you.
-And the soul with a brother-ESre I'll I shall thee, we did she may it,
-
-A:
-And a good that, if byer in our love for not.
-ROMELLFKE:
-Now we think this had it do, then's love to my lord.
+So'll shall it, you I all as you be a blood:
+As that.
+To
+My lord and that thy king. Good!
+You, and not be so's will come, and the king, we he; and all to the house to be
+Which with thy love out of thy man,
+Come we can so.
+KINGENCE:
+And as not is, but they not shall are in us is be, not have
 ```
 ## License
 MIT
