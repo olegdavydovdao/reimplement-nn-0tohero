@@ -26,9 +26,14 @@ There are only 4 folders that matter in the project:
 - **`3_batchnorm_and_statistics`** — statistics graphs of mlp model and batch normalization layer.
 - **`4_backpropogation`** — manual derive backpropagation of tensor-level gradients.
 - **`5_cnn_1d`** — wavenet architecture as 1 dimensional cnn for text.
-- **`6_gpt_base`** — transformer and gpt architecture pretraining stage without finetuning.
+- **`6_gpt_base`** — minimum core for transformer and gpt architecture pretraining stage without finetuning.
 - **`7_tokenizer`** — bpe(byte pair encoding) algorithm for training and inference tokenizer.
-- **`8_gpt2_base`** — OpenAI gpt2(124M parameters) architecture efficient ddp pretraining stage without finetuning. I train gpt2 on small dataset roughly 1 epoch = 320K tokens (I run 8 epochs, this roughly 2.5M tokens). This can be improved: by expanding the dataset (for example FineWeb-Edu 10B tokens dataset) and training time; adding Hellaswag evaluation; adding a fine-tuning stage to the model so that the model can interact as a Q&A manner; acceleration code by convert Python/Pytorch into C/CUDA.
+- **`8_gpt2_base`** — OpenAI gpt2(124M parameters) architecture efficient ddp pretraining stage without finetuning. I train gpt2 on small dataset roughly 1 epoch = 320K tokens (I run 8 epochs, this roughly 2.5M tokens).  
+This can be improved:  
+expanding the dataset (for example FineWeb-Edu 10B tokens dataset) and training time;  
+adding Hellaswag evaluation;  
+adding a fine-tuning stage to the model so that the model can interact as a Q&A manner;  
+acceleration code by convert Python/Pytorch into C/CUDA.
 
 ## Quick start
 **Requirements**: [uv](https://docs.astral.sh/uv/), Git, Python 3.12+, a single Nvidia GPU for lecture 6,8 (tested on Nvidia T4 and Geforce GTX 1050Ti).  
