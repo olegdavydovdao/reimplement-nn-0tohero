@@ -18,8 +18,8 @@ There are only 4 folders that matter in the project:
 - **`logs`** &mdash; folders that contains images of graphs that were created as a result of source code in the lectures folder.
 ### Source code
 **`.py`** files in **lectures** and **lectures/utils** folders:
-- **`preprocess_names`** — reusable prepare data for 1-5 lectures to feed into neural network.
-- **`savefig`** — reusable save png image of graphs for all lectures.
+- **`utils.preprocess_names`** — reusable prepare data for 1-5 lectures to feed into neural network.
+- **`utils.savefig`** — reusable save png image of graphs for all lectures.
 - **`0_autograd`** — backpropogation autograd engine and train mlp at scalar level.
 - **`1_bigram`** — bigram character level laguage model with 1 linear layer.
 - **`2_mlp`** — n-gram character level mlp laguage model.
