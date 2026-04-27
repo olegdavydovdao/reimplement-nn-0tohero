@@ -1,5 +1,5 @@
 # Reimplement Neural Networks: Zero to Hero
-![Loss gpt 124m](logs/8_gpt2_logs/loss_graph_124M.png)   
+![Loss gpt2 124M](logs/8_gpt2_logs/loss_graph_124M.png)   
 Reimplement from scratch "Neural Networks: Zero to Hero" Andrej Karpathy's course.  
 This course is an introduction to neural networks from the basics to modern architectures such as the GPT in code.  
 Tech stack: Python, Pytorch.  
@@ -27,7 +27,7 @@ There are only 4 folders that matter in the project:
 - **`5_cnn_1d`** — wavenet architecture as 1 dimensional cnn for text.
 - **`6_gpt_base`** — transformer and gpt architecture pretraining stage without finetuning.
 - **`7_tokenizer`** — bpe(byte pair encoding) algorithm for training and inference tokenizer.
-- **`8_gpt2_base`** — OpenAI gpt2(124m parameters) architecture efficient ddp pretraining stage without finetuning. I train gpt2 on small dataset roughly 300K tokens 8 epochs. This can be improved by expanding the dataset (for example FineWeb-Edu 10B tokens dataset) and training time.
+- **`8_gpt2_base`** — OpenAI gpt2(124M parameters) architecture efficient ddp pretraining stage without finetuning. I train gpt2 on small dataset roughly 1 epoch = 320K tokens (I run 8 epochs, this roughly 2.5M tokens). This can be improved by expanding the dataset (for example FineWeb-Edu 10B tokens dataset) and training time and add hellaswag evaluation.
 
 ## Quick start
 **Requirements**: [uv](https://docs.astral.sh/uv/), Git, Python 3.12+, a single Nvidia GPU for lecture 6,8 (tested on Nvidia T4 and Geforce GTX 1050Ti).  
@@ -44,8 +44,8 @@ uv sync
 # 4. Run code in lectures
 uv run lectures/#choose_file.py
 
-# 5. Run 8_gpt2_base with ddp (if you have 1 node with >= 2 GPUs). --nproc_per_node=n, where n is number of GPUs 
-uv run torchrun --standalone --nproc_per_node=2 lectures/8_gpt2_base.py
+# 5. Optional: Run 8_gpt2_base.py with ddp. --nproc_per_node=n, where n is number of GPUs in 1 node
+uv run torchrun --standalone --nproc_per_node=1 lectures/8_gpt2_base.py
 ```
 ## 8_gpt2_base.py sample
 Context feed into model: `What makes a lord worthy?`  
