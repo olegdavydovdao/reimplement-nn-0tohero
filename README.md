@@ -36,7 +36,7 @@ adding a fine-tuning stage to the model so that the model can interact as a Q&A 
 acceleration code by convert Python/Pytorch into C/CUDA.
 
 ## Quick start
-**Requirements**: [uv](https://docs.astral.sh/uv/), Git, Python 3.12+, a single Nvidia GPU for lecture 6,8 (tested on Nvidia T4 and Geforce GTX 1050Ti).  
+**Requirements**: [uv](https://docs.astral.sh/uv/), [Git](https://git-scm.com/), Python 3.12+, a single Nvidia GPU for lecture 6,8 (tested on Nvidia T4 and Geforce GTX 1050Ti).  
 ```bash
 # 1. Install uv (if you don't have it)
 curl -LsSf https://astral.sh/uv/install.sh | sh
