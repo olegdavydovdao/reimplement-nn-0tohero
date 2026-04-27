@@ -72,5 +72,3 @@ Come we can so.
 KINGENCE:
 And as not is, but they not shall are in us is be, not have
 ```
-## License
-MIT
