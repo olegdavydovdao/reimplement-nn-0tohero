@@ -1,7 +1,7 @@
 # Reimplement Neural Networks: Zero to Hero
 ![Loss gpt2 124M](logs/8_gpt2_logs/loss_graph_124M.png)   
-Reimplement from scratch "Neural Networks: Zero to Hero" Andrej Karpathy's course.  
-This course is an introduction to neural networks from the basics to modern architectures such as the GPT in code.  
+Reimplement from scratch all alone in code "Neural Networks: Zero to Hero" Andrej Karpathy's course.  
+This course is an introduction to neural networks from the basics to modern architectures such as the GPT at pretraining stage in code.  
 Tech stack: Python, Pytorch, DL math and principles.  
 Links to the original course: [GitHub](https://github.com/karpathy/nn-zero-to-hero), [YouTube](https://www.youtube.com/playlist?list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ), [Site](https://karpathy.ai/zero-to-hero.html).
 ### Course completion process
