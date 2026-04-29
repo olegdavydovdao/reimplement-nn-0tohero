@@ -27,7 +27,7 @@ There are only 4 folders that matter in the project:
 - **`4_backpropogation`** — manual derive backpropagation of tensor-level gradients.
 - **`5_cnn_1d`** — wavenet architecture as 1 dimensional cnn for text.
 - **`6_gpt_base`** — minimum core for transformer and gpt architecture pretraining stage without finetuning.
-- **`7_tokenizer`** — bpe(byte pair encoding) algorithm for training and inference tokenizer.
+- **`7_tokenizer`** — bpe(byte pair encoding) algorithm tokenizer with using a regex pattern for training and inference.
 - **`8_gpt2_base`** — OpenAI gpt2(124M parameters) architecture efficient ddp pretraining stage without finetuning. I train gpt2 on small dataset roughly 1 epoch = 320K tokens (I run 8 epochs, this roughly 2.5M tokens).  
 This can be improved:  
 expanding the dataset (for example FineWeb-Edu 10B tokens dataset) and training time;  
